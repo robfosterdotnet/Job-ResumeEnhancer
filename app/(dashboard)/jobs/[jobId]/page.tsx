@@ -15,6 +15,7 @@ import {
   Building,
   MessageSquare,
   ArrowLeft,
+  Play,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ResumeUploader } from "@/components/jobs/resume-uploader"
@@ -135,6 +136,12 @@ export default async function JobDetailPage({ params }: PageProps) {
               <Button variant="outline">
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Chat
+              </Button>
+            </Link>
+            <Link href={`/jobs/${job.id}/mock-interview`}>
+              <Button variant="outline" disabled={!hasAnalysis || (latestAnalysis?.interviewQuestions?.length || 0) === 0}>
+                <Play className="mr-2 h-4 w-4" />
+                Mock Interview
               </Button>
             </Link>
             <ExportButton jobId={job.id} jobTitle={job.title} />

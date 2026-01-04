@@ -161,7 +161,7 @@ export async function runCompanyResearch(
       { role: "user", content: userPrompt },
     ],
     {
-      maxTokens: 6000,
+      maxTokens: 12000, // High value to account for model reasoning tokens + large JSON output
     }
   )
 

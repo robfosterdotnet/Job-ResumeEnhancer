@@ -193,6 +193,102 @@ export const chatMessages = sqliteTable("chat_messages", {
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// ============ MOCK INTERVIEW TABLES ============
+
+export const mockInterviewSessions = sqliteTable("mock_interview_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  jobApplicationId: integer("job_application_id")
+    .references(() => jobApplications.id)
+    .notNull(),
+  resumeAnalysisId: integer("resume_analysis_id")
+    .references(() => resumeAnalyses.id),
+
+  // Session Configuration
+  feedbackMode: text("feedback_mode").$type<"immediate" | "summary">().notNull().default("immediate"),
+  questionCount: integer("question_count").default(10),
+  selectedCategoriesJson: text("selected_categories_json"), // JSON array of categories
+  difficulty: text("difficulty").$type<"mixed" | "easy" | "medium" | "hard">().default("mixed"),
+  voiceEnabled: integer("voice_enabled", { mode: "boolean" }).default(false),
+
+  // Session State
+  status: text("status").$type<"setup" | "in_progress" | "completed" | "abandoned">().default("setup"),
+  currentQuestionIndex: integer("current_question_index").default(0),
+
+  // Performance Summary (populated on completion)
+  overallScore: real("overall_score"),
+  summaryFeedback: text("summary_feedback"),
+  strengthAreasJson: text("strength_areas_json"),
+  improvementAreasJson: text("improvement_areas_json"),
+
+  startedAt: integer("started_at", { mode: "timestamp" }),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
+export const mockInterviewResponses = sqliteTable("mock_interview_responses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: integer("session_id")
+    .references(() => mockInterviewSessions.id)
+    .notNull(),
+
+  // Question Info
+  questionId: integer("question_id")
+    .references(() => interviewQuestions.id), // null if AI-generated follow-up
+  questionText: text("question_text").notNull(),
+  questionCategory: text("question_category").$type<
+    "behavioral" | "technical" | "situational" | "company-specific" | "role-specific" | "follow-up"
+  >(),
+  questionDifficulty: text("question_difficulty").$type<"easy" | "medium" | "hard">(),
+  isFollowUp: integer("is_follow_up", { mode: "boolean" }).default(false),
+  parentResponseId: integer("parent_response_id"), // Self-reference for follow-ups
+  orderIndex: integer("order_index").notNull(),
+
+  // User Response
+  userAnswer: text("user_answer"),
+  answeredAt: integer("answered_at", { mode: "timestamp" }),
+  answerDurationSeconds: integer("answer_duration_seconds"),
+
+  // AI Evaluation
+  score: real("score"), // 0-100
+  feedback: text("feedback"),
+  suggestedImprovement: text("suggested_improvement"),
+  keyPointsCoveredJson: text("key_points_covered_json"),
+  keyPointsMissedJson: text("key_points_missed_json"),
+  evaluatedAt: integer("evaluated_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
+export const mockInterviewMetrics = sqliteTable("mock_interview_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  jobApplicationId: integer("job_application_id")
+    .references(() => jobApplications.id)
+    .notNull()
+    .unique(),
+
+  // Aggregated Performance Metrics
+  totalSessions: integer("total_sessions").default(0),
+  completedSessions: integer("completed_sessions").default(0),
+  averageScore: real("average_score"),
+
+  // Category Performance
+  behavioralAvgScore: real("behavioral_avg_score"),
+  technicalAvgScore: real("technical_avg_score"),
+  situationalAvgScore: real("situational_avg_score"),
+  companySpecificAvgScore: real("company_specific_avg_score"),
+  roleSpecificAvgScore: real("role_specific_avg_score"),
+
+  // Trend Data
+  scoreHistoryJson: text("score_history_json"), // JSON array of {date, score}
+
+  // Best/Worst Areas
+  strongestCategory: text("strongest_category"),
+  weakestCategory: text("weakest_category"),
+
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============ RELATIONS ============
 
 export const resumesRelations = relations(resumes, ({ many }) => ({
@@ -215,6 +311,8 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one, many 
   }),
   analyses: many(resumeAnalyses),
   chatSessions: many(chatSessions),
+  mockInterviewSessions: many(mockInterviewSessions),
+  mockInterviewMetrics: one(mockInterviewMetrics),
 }))
 
 export const resumeAnalysesRelations = relations(resumeAnalyses, ({ one, many }) => ({
@@ -295,5 +393,42 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   session: one(chatSessions, {
     fields: [chatMessages.sessionId],
     references: [chatSessions.id],
+  }),
+}))
+
+// Mock Interview Relations
+export const mockInterviewSessionsRelations = relations(mockInterviewSessions, ({ one, many }) => ({
+  jobApplication: one(jobApplications, {
+    fields: [mockInterviewSessions.jobApplicationId],
+    references: [jobApplications.id],
+  }),
+  resumeAnalysis: one(resumeAnalyses, {
+    fields: [mockInterviewSessions.resumeAnalysisId],
+    references: [resumeAnalyses.id],
+  }),
+  responses: many(mockInterviewResponses),
+}))
+
+export const mockInterviewResponsesRelations = relations(mockInterviewResponses, ({ one, many }) => ({
+  session: one(mockInterviewSessions, {
+    fields: [mockInterviewResponses.sessionId],
+    references: [mockInterviewSessions.id],
+  }),
+  question: one(interviewQuestions, {
+    fields: [mockInterviewResponses.questionId],
+    references: [interviewQuestions.id],
+  }),
+  parentResponse: one(mockInterviewResponses, {
+    fields: [mockInterviewResponses.parentResponseId],
+    references: [mockInterviewResponses.id],
+    relationName: "followUps",
+  }),
+  followUps: many(mockInterviewResponses, { relationName: "followUps" }),
+}))
+
+export const mockInterviewMetricsRelations = relations(mockInterviewMetrics, ({ one }) => ({
+  jobApplication: one(jobApplications, {
+    fields: [mockInterviewMetrics.jobApplicationId],
+    references: [jobApplications.id],
   }),
 }))

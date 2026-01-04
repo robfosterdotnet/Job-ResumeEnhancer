@@ -47,7 +47,6 @@ export async function chatCompletion(
   const response = await client.chat.completions.create({
     model: deploymentName,
     messages,
-    temperature: options?.temperature ?? 1,
     max_completion_tokens: options?.maxTokens ?? 4000,
     response_format: options?.responseFormat === "json" ? { type: "json_object" } : undefined,
   })
@@ -68,7 +67,6 @@ export async function streamChatCompletion(
     model: deploymentName,
     messages,
     stream: true,
-    temperature: options?.temperature ?? 1,
     max_completion_tokens: options?.maxTokens ?? 4000,
   })
 
