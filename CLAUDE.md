@@ -7,14 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Job Resume Enhancer is a personal job search tool that analyzes resumes against job postings and researches companies. It uses two AI agents powered by Azure OpenAI (gpt-5.2):
 
 1. **Resume Analyzer** - Evaluates resumes, provides fit scores, enhancement suggestions, and generates interview questions
-2. **Company Researcher** - Deep dives into companies using DuckDuckGo search to find leadership, financials, news, legal issues, and ethics alignment
+2. **Company Researcher** - Deep dives into companies using Brave Search (with DuckDuckGo fallback) to find leadership, financials, news, legal issues, and ethics alignment
 
 ## Tech Stack
 
 - **Framework**: Next.js 16+ (App Router) with TypeScript
-- **AI**: Azure OpenAI (gpt-5.2 deployment)
+- **AI**: Azure OpenAI (gpt-5.2 deployment) - uses `max_completion_tokens` not `max_tokens`
 - **Database**: SQLite with Drizzle ORM
-- **Web Search**: DuckDuckGo (duck-duck-scrape)
+- **Web Search**: Brave Search API (primary) with DuckDuckGo fallback
 - **UI**: Tailwind CSS v4 + custom shadcn/ui components with Anthropic brand colors (#E5674C coral primary)
 - **Testing**: Vitest with React Testing Library
 
@@ -24,7 +24,7 @@ Job Resume Enhancer is a personal job search tool that analyzes resumes against 
 npm run dev          # Start development server
 npm run build        # Production build
 npm run lint         # Run ESLint
-npm run test         # Run all tests (53 tests)
+npm run test         # Run all tests
 npm run test:watch   # Run tests in watch mode
 npm run db:push      # Push Drizzle schema changes to SQLite
 npm run db:studio    # Open Drizzle Studio for database inspection
@@ -44,6 +44,7 @@ AZURE_OPENAI_API_KEY=your-api-key
 AZURE_OPENAI_DEPLOYMENT=gpt-5.2
 AZURE_OPENAI_API_VERSION=2024-07-01-preview
 DATABASE_URL=file:./data/resume-enhancer.db
+BRAVE_SEARCH_API_KEY=your-brave-api-key  # Optional, falls back to DuckDuckGo
 ```
 
 ## Architecture
@@ -60,11 +61,13 @@ DATABASE_URL=file:./data/resume-enhancer.db
 
 ### Key Patterns
 
-**Streaming AI Responses**: Agent endpoints (`resume-analyzer`, `company-research`, `chat`) use Server-Sent Events for streaming. They return progress updates and final results via `data:` events.
+**Streaming AI Responses**: Agent endpoints (`resume-analyzer`, `company-research`, `chat`) use Server-Sent Events for streaming. They return progress updates and final results via `data:` events with types: `chunk`, `complete`, `error`.
 
-**Zod Schema Validation**: All AI outputs are validated against Zod schemas in `lib/ai/agents/` for type-safe structured responses.
+**Zod Schema Validation**: All AI outputs are validated against Zod schemas in `lib/ai/agents/`. Schemas use `.nullable().transform(v => v ?? default)` pattern to handle null AI responses gracefully.
 
 **Drizzle Relations**: The database schema (`lib/db/schema.ts`) defines 13 tables with extensive relations. Use `db.query.tableName.findFirst/findMany({ with: { relation: true } })` for eager loading.
+
+**Chat Markdown Rendering**: Chat assistant responses render markdown using `react-markdown` with `remark-gfm` for GitHub Flavored Markdown support.
 
 ### Component Organization
 
@@ -80,6 +83,13 @@ Core: `resumes`, `companies`, `jobApplications`
 Analysis: `resumeAnalyses`, `interviewQuestions`
 Research: `companyResearch`, `leadershipTeam`, `financialInfo`, `companyNews`, `legalIssues`, `glassdoorInsights`
 Chat: `chatSessions`, `chatMessages`
+
+## Important Implementation Notes
+
+- Azure OpenAI only supports `temperature: 1` - do not pass other temperature values
+- Brave Search API has 1 query/second rate limit - use 1.5s delays between sequential searches
+- The `chatSessions` table relates to `jobApplications` via `jobApplicationId`
+- Client components using server-passed props (like `initialMessages`) need `useEffect` to sync on prop changes
 
 ## Reference
 

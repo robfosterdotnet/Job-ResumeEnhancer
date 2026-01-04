@@ -14,7 +14,7 @@ A personal job search tool that analyzes your resume against job postings and de
 - Generate 15-20 likely interview questions with suggested answers
 
 ### Company Research
-- Deep dive into any company using web search
+- Deep dive into any company using Brave Search API (with DuckDuckGo fallback)
 - Leadership team profiles (CEO, executives, board members)
 - Financial information (revenue, market cap, growth trends)
 - Employee reviews and culture insights (Glassdoor-style)
@@ -22,10 +22,15 @@ A personal job search tool that analyzes your resume against job postings and de
 - Legal issues and regulatory concerns
 - Ethics alignment scoring
 
+### Chat Assistant
+- Conversational interface with your saved research data
+- Ask follow-up questions about analysis or company research
+- Markdown-rendered responses with bullet points, lists, and formatting
+- Session management for multiple conversations per job
+
 ### Application Tracking
 - Manage multiple job applications in one dashboard
 - Track status: Saved → Analyzing → Applied → Interviewing → Offered
-- Chat with your saved research data
 - Export reports as JSON or Markdown
 
 ## Tech Stack
@@ -35,7 +40,7 @@ A personal job search tool that analyzes your resume against job postings and de
 | Framework | Next.js 16+ (App Router) + TypeScript |
 | AI | Azure OpenAI (gpt-5.2 deployment) |
 | Database | SQLite + Drizzle ORM |
-| Web Search | DuckDuckGo (duck-duck-scrape) |
+| Web Search | Brave Search API (primary) + DuckDuckGo (fallback) |
 | UI | Tailwind CSS v4 + shadcn/ui + Anthropic brand colors |
 | Testing | Vitest + React Testing Library |
 
@@ -45,12 +50,13 @@ A personal job search tool that analyzes your resume against job postings and de
 
 - Node.js 18+
 - Azure OpenAI API access with a gpt-5.2 (or compatible) deployment
+- Brave Search API key (optional, falls back to DuckDuckGo)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/Job-ResumeEnhancer.git
+git clone https://github.com/robfosterdotnet/Job-ResumeEnhancer.git
 cd Job-ResumeEnhancer
 
 # Install dependencies
@@ -58,7 +64,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your Azure OpenAI credentials
+# Edit .env with your API credentials
 
 # Initialize the database
 npm run db:push
@@ -80,6 +86,9 @@ AZURE_OPENAI_API_VERSION=2024-07-01-preview
 
 # Database
 DATABASE_URL=file:./data/resume-enhancer.db
+
+# Web Search (optional - falls back to DuckDuckGo if not set)
+BRAVE_SEARCH_API_KEY=your-brave-api-key
 ```
 
 ## Usage
@@ -159,29 +168,6 @@ npm run db:push      # Push schema changes
 npm run db:studio    # Open Drizzle Studio
 ```
 
-## Database Schema
-
-### Core Tables
-- `resumes` - Uploaded resume files and parsed content
-- `companies` - Company information
-- `jobApplications` - Job applications with status tracking
-
-### Analysis Tables
-- `resumeAnalyses` - Fit scores, strengths, weaknesses, suggestions
-- `interviewQuestions` - Generated questions with answers
-
-### Research Tables
-- `companyResearch` - Research summaries and ethics alignment
-- `leadershipTeam` - Executive profiles
-- `financialInfo` - Revenue, market cap, stock data
-- `companyNews` - News articles with sentiment
-- `legalIssues` - Lawsuits and regulatory issues
-- `glassdoorInsights` - Employee ratings and reviews
-
-### Chat Tables
-- `chatSessions` - Chat session metadata
-- `chatMessages` - Individual messages
-
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -206,19 +192,6 @@ The UI uses Anthropic's brand colors:
 - **Success**: #10B981
 - **Warning**: #F59E0B
 - **Error**: #EF4444
-
-## Testing
-
-The project includes 53 tests covering:
-
-- Analysis components (FitScoreGauge, StrengthsWeaknesses, InterviewQuestions)
-- Research components (CompanyOverview, LegalIssues)
-- Chat components (ChatMessage, ChatInput)
-
-Run tests with:
-```bash
-npm run test
-```
 
 ## Documentation
 
