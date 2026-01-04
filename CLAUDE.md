@@ -91,6 +91,16 @@ Chat: `chatSessions`, `chatMessages`
 - The `chatSessions` table relates to `jobApplications` via `jobApplicationId`
 - Client components using server-passed props (like `initialMessages`) need `useEffect` to sync on prop changes
 
+## Local Files Directory
+
+The `.local/` directory is for drafts, notes, and working files that should NOT be committed to the repository. This directory is in `.gitignore`.
+
+Use `.local/` for:
+- LinkedIn article drafts
+- Planning documents
+- Personal notes
+- Any other files that should stay local
+
 ## Reference
 
 See `SPECIFICATION.md` for the complete technical specification including database schema details, API endpoint documentation, and implementation status.
