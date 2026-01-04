@@ -49,3 +49,6 @@ yarn-error.log*
 
 # Local drafts and working files (not tracked)
 .local/
+
+# Claude Code working directory
+.claude/
