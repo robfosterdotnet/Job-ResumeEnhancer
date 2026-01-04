@@ -23,9 +23,22 @@ Job Resume Enhancer is a personal job search tool that analyzes resumes against 
 npm run dev          # Start development server
 npm run build        # Production build
 npm run lint         # Run ESLint
+npm run test         # Run all tests
+npm run test:watch   # Run tests in watch mode
 npm run db:push      # Push Drizzle schema changes
 npm run db:studio    # Open Drizzle Studio
 ```
+
+## Testing Requirements
+
+**Tests are mandatory before moving between implementation phases.**
+
+1. Write tests for all new functionality (API routes, agents, parsers, utilities)
+2. Run `npm run test` and ensure all tests pass before proceeding to the next phase
+3. Run `npm run build` to verify no TypeScript errors
+4. Run `npm run lint` to ensure code quality
+
+Test files should be colocated with source files using `.test.ts` or `.spec.ts` suffix, or placed in `__tests__/` directories.
 
 ## Environment Variables
 
