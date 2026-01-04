@@ -1,0 +1,200 @@
+import { NextRequest, NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { jobApplications, resumeAnalyses, companyResearch } from "@/lib/db/schema"
+import { eq, desc } from "drizzle-orm"
+
+// POST /api/export - Generate a report for a job application
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { jobApplicationId, format = "json" } = body
+
+    if (!jobApplicationId) {
+      return NextResponse.json(
+        { error: "Job application ID is required" },
+        { status: 400 }
+      )
+    }
+
+    // Fetch all data for the job application
+    const job = await db.query.jobApplications.findFirst({
+      where: eq(jobApplications.id, jobApplicationId),
+      with: {
+        company: true,
+        resume: true,
+      },
+    })
+
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 })
+    }
+
+    // Get latest analysis
+    const analysis = await db.query.resumeAnalyses.findFirst({
+      where: eq(resumeAnalyses.jobApplicationId, jobApplicationId),
+      orderBy: [desc(resumeAnalyses.createdAt)],
+      with: {
+        interviewQuestions: true,
+      },
+    })
+
+    // Get company research if company exists
+    let research = null
+    if (job.companyId) {
+      research = await db.query.companyResearch.findFirst({
+        where: eq(companyResearch.companyId, job.companyId),
+        orderBy: [desc(companyResearch.createdAt)],
+        with: {
+          leadershipTeam: true,
+          news: true,
+          legalIssues: true,
+        },
+      })
+    }
+
+    // Build report data
+    const report = {
+      generatedAt: new Date().toISOString(),
+      jobApplication: {
+        title: job.title,
+        company: job.company?.name,
+        status: job.status,
+        jobDescriptionUrl: job.jobDescriptionUrl,
+        appliedAt: job.appliedAt,
+        notes: job.notes,
+      },
+      resumeAnalysis: analysis
+        ? {
+            fitScore: analysis.fitScore,
+            summary: analysis.overallSummary,
+            strengths: analysis.strengthsJson ? JSON.parse(analysis.strengthsJson) : [],
+            weaknesses: analysis.weaknessesJson ? JSON.parse(analysis.weaknessesJson) : [],
+            enhancements: analysis.enhancementSuggestionsJson
+              ? JSON.parse(analysis.enhancementSuggestionsJson)
+              : [],
+            skillGaps: analysis.skillGapsJson ? JSON.parse(analysis.skillGapsJson) : [],
+            keywordsMatched: analysis.keywordsMatchedJson
+              ? JSON.parse(analysis.keywordsMatchedJson)
+              : [],
+            keywordsMissing: analysis.keywordsMissingJson
+              ? JSON.parse(analysis.keywordsMissingJson)
+              : [],
+            interviewQuestions: analysis.interviewQuestions,
+          }
+        : null,
+      companyResearch: research
+        ? {
+            overview: research.coreBusinessJson ? JSON.parse(research.coreBusinessJson) : null,
+            culture: research.cultureValuesJson ? JSON.parse(research.cultureValuesJson) : null,
+            ethicsAlignment: research.ethicsAlignmentJson
+              ? JSON.parse(research.ethicsAlignmentJson)
+              : null,
+            leadership: research.leadershipTeam,
+            news: research.news,
+            legalIssues: research.legalIssues,
+          }
+        : null,
+    }
+
+    if (format === "json") {
+      return NextResponse.json(report)
+    }
+
+    // For markdown format
+    if (format === "markdown") {
+      const markdown = generateMarkdownReport(report)
+      return new NextResponse(markdown, {
+        headers: {
+          "Content-Type": "text/markdown",
+          "Content-Disposition": `attachment; filename="${job.title.replace(/[^a-z0-9]/gi, "_")}_report.md"`,
+        },
+      })
+    }
+
+    return NextResponse.json(report)
+  } catch (error) {
+    console.error("Error generating export:", error)
+    return NextResponse.json(
+      { error: "Failed to generate export" },
+      { status: 500 }
+    )
+  }
+}
+
+function generateMarkdownReport(report: Record<string, unknown>): string {
+  const job = report.jobApplication as Record<string, unknown>
+  const analysis = report.resumeAnalysis as Record<string, unknown> | null
+  const research = report.companyResearch as Record<string, unknown> | null
+
+  let md = `# Job Application Report\n\n`
+  md += `Generated: ${report.generatedAt}\n\n`
+
+  md += `## Position Details\n\n`
+  md += `- **Title:** ${job.title}\n`
+  md += `- **Company:** ${job.company || "N/A"}\n`
+  md += `- **Status:** ${job.status}\n`
+  if (job.appliedAt) md += `- **Applied:** ${job.appliedAt}\n`
+  if (job.notes) md += `\n**Notes:** ${job.notes}\n`
+
+  if (analysis) {
+    md += `\n---\n\n## Resume Analysis\n\n`
+    md += `### Fit Score: ${analysis.fitScore}%\n\n`
+    md += `${analysis.summary}\n\n`
+
+    const strengths = analysis.strengths as Array<{ area: string; description: string }>
+    if (strengths?.length) {
+      md += `### Strengths\n\n`
+      strengths.forEach((s) => {
+        md += `- **${s.area}:** ${s.description}\n`
+      })
+    }
+
+    const weaknesses = analysis.weaknesses as Array<{ area: string; description: string; suggestion: string }>
+    if (weaknesses?.length) {
+      md += `\n### Areas for Improvement\n\n`
+      weaknesses.forEach((w) => {
+        md += `- **${w.area}:** ${w.description}\n  - *Suggestion:* ${w.suggestion}\n`
+      })
+    }
+
+    const questions = analysis.interviewQuestions as Array<{ question: string; category: string; suggestedAnswer: string }>
+    if (questions?.length) {
+      md += `\n### Interview Questions\n\n`
+      questions.forEach((q, i) => {
+        md += `${i + 1}. **${q.question}** (${q.category})\n`
+        md += `   > ${q.suggestedAnswer}\n\n`
+      })
+    }
+  }
+
+  if (research) {
+    md += `\n---\n\n## Company Research\n\n`
+
+    const overview = research.overview as Record<string, unknown>
+    if (overview) {
+      md += `### Overview\n\n`
+      md += `${overview.description || ""}\n\n`
+      if (overview.industry) md += `- **Industry:** ${overview.industry}\n`
+      if (overview.headquarters) md += `- **Headquarters:** ${overview.headquarters}\n`
+      if (overview.employeeCount) md += `- **Employees:** ${overview.employeeCount}\n`
+    }
+
+    const leadership = research.leadership as Array<{ name: string; title: string; bio?: string }>
+    if (leadership?.length) {
+      md += `\n### Leadership\n\n`
+      leadership.forEach((l) => {
+        md += `- **${l.name}** - ${l.title}\n`
+        if (l.bio) md += `  ${l.bio}\n`
+      })
+    }
+
+    const ethics = research.ethicsAlignment as { score: number; recommendation: string; positiveFactors: string[]; concerns: string[] }
+    if (ethics) {
+      md += `\n### Ethics Alignment\n\n`
+      md += `**Score:** ${ethics.score}/10\n\n`
+      md += `${ethics.recommendation}\n`
+    }
+  }
+
+  return md
+}

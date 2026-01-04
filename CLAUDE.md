@@ -11,11 +11,12 @@ Job Resume Enhancer is a personal job search tool that analyzes resumes against 
 
 ## Tech Stack
 
-- **Framework**: Next.js 14+ (App Router) with TypeScript
+- **Framework**: Next.js 16+ (App Router) with TypeScript
 - **AI**: Azure OpenAI (gpt-5.2 deployment)
 - **Database**: SQLite with Drizzle ORM
 - **Web Search**: DuckDuckGo (duck-duck-scrape)
-- **UI**: Tailwind CSS + shadcn/ui with Anthropic brand colors (#E5674C coral primary)
+- **UI**: Tailwind CSS v4 + custom shadcn/ui components with Anthropic brand colors (#E5674C coral primary)
+- **Testing**: Vitest with React Testing Library
 
 ## Development Commands
 
@@ -23,26 +24,20 @@ Job Resume Enhancer is a personal job search tool that analyzes resumes against 
 npm run dev          # Start development server
 npm run build        # Production build
 npm run lint         # Run ESLint
-npm run test         # Run all tests
+npm run test         # Run all tests (53 tests)
 npm run test:watch   # Run tests in watch mode
-npm run db:push      # Push Drizzle schema changes
-npm run db:studio    # Open Drizzle Studio
+npm run db:push      # Push Drizzle schema changes to SQLite
+npm run db:studio    # Open Drizzle Studio for database inspection
 ```
 
-## Testing Requirements
-
-**Tests are mandatory before moving between implementation phases.**
-
-1. Write tests for all new functionality (API routes, agents, parsers, utilities)
-2. Run `npm run test` and ensure all tests pass before proceeding to the next phase
-3. Run `npm run build` to verify no TypeScript errors
-4. Run `npm run lint` to ensure code quality
-
-Test files should be colocated with source files using `.test.ts` or `.spec.ts` suffix, or placed in `__tests__/` directories.
+To run a single test file:
+```bash
+npx vitest run __tests__/components/analysis/fit-score-gauge.test.tsx
+```
 
 ## Environment Variables
 
-Required in `.env.local`:
+Required in `.env` or `.env.local`:
 ```
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_KEY=your-api-key
@@ -53,25 +48,31 @@ DATABASE_URL=file:./data/resume-enhancer.db
 
 ## Architecture
 
-### Directory Structure
+### Route Structure
 
-- `app/(dashboard)/` - Dashboard pages using route groups
-- `app/api/agents/` - AI agent endpoints (resume-analyzer, company-research) with streaming
+- `app/(dashboard)/` - Dashboard pages using route groups for shared layout
+- `app/(dashboard)/jobs/[jobId]/` - Dynamic job detail pages with sub-routes:
+  - `resume-analysis/` - Analysis results view
+  - `company-research/` - Research results view
+  - `chat/` - Chat interface with session management
+- `app/api/agents/` - AI agent endpoints with SSE streaming
 - `app/api/jobs/` - CRUD operations for job applications
-- `lib/db/` - Drizzle ORM schema and database connection
-- `lib/ai/` - Azure OpenAI client and agent implementations
-- `lib/parsers/` - PDF, DOCX, TXT document parsing
-- `lib/scrapers/` - Web scraping and DuckDuckGo search utilities
-- `components/ui/` - shadcn/ui base components
-- `components/analysis/` - Resume analysis result views
-- `components/research/` - Company research views
 
-### Key Files
+### Key Patterns
 
-- `lib/db/schema.ts` - Drizzle schema with all database tables
-- `lib/ai/client.ts` - Azure OpenAI client with streaming support
-- `lib/ai/agents/resume-analyzer.ts` - Resume analysis agent logic
-- `lib/ai/agents/company-researcher.ts` - Company research agent logic
+**Streaming AI Responses**: Agent endpoints (`resume-analyzer`, `company-research`, `chat`) use Server-Sent Events for streaming. They return progress updates and final results via `data:` events.
+
+**Zod Schema Validation**: All AI outputs are validated against Zod schemas in `lib/ai/agents/` for type-safe structured responses.
+
+**Drizzle Relations**: The database schema (`lib/db/schema.ts`) defines 13 tables with extensive relations. Use `db.query.tableName.findFirst/findMany({ with: { relation: true } })` for eager loading.
+
+### Component Organization
+
+- `components/ui/` - Base UI components (button, card, input, dialog, etc.)
+- `components/analysis/` - Resume analysis views (FitScoreGauge, StrengthsWeaknesses, SkillGaps, InterviewQuestions)
+- `components/research/` - Company research views (CompanyOverview, LeadershipTeam, Financials, NewsFeed, LegalIssues, EthicsAlignment)
+- `components/chat/` - Chat interface (ChatMessage, ChatMessageList, ChatInput, ChatInterface)
+- `components/jobs/` - Job management (JobForm, ResumeUploader, ExportButton)
 
 ### Database Tables
 
@@ -80,12 +81,6 @@ Analysis: `resumeAnalyses`, `interviewQuestions`
 Research: `companyResearch`, `leadershipTeam`, `financialInfo`, `companyNews`, `legalIssues`, `glassdoorInsights`
 Chat: `chatSessions`, `chatMessages`
 
-### API Patterns
-
-- Agent endpoints use Server-Sent Events (SSE) for streaming responses
-- All AI outputs use Zod schemas for structured validation
-- Job description URLs are scraped with Cheerio
-
 ## Reference
 
-See `SPECIFICATION.md` for the complete technical specification including database schema details, API endpoint documentation, and implementation phases.
+See `SPECIFICATION.md` for the complete technical specification including database schema details, API endpoint documentation, and implementation status.

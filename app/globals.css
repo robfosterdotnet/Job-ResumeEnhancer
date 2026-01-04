@@ -1,0 +1,124 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  /* Anthropic Brand Colors */
+  --primary: #E5674C;
+  --primary-light: #FF8A65;
+  --primary-dark: #C44D35;
+  --primary-foreground: #FFFFFF;
+
+  /* Neutrals */
+  --background: #FAFAFA;
+  --foreground: #1A1A2E;
+  --muted: #F5F5F5;
+  --muted-foreground: #6B7280;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #E5674C;
+
+  /* Card */
+  --card: #FFFFFF;
+  --card-foreground: #1A1A2E;
+
+  /* Popover */
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A2E;
+
+  /* Secondary */
+  --secondary: #F5F5F5;
+  --secondary-foreground: #1A1A2E;
+
+  /* Accent */
+  --accent: #FFF5F3;
+  --accent-foreground: #C44D35;
+
+  /* Destructive */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Semantic */
+  --success: #10B981;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-foreground: #FFFFFF;
+  --error: #EF4444;
+  --info: #3B82F6;
+
+  /* Radius */
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1A1A2E;
+    --foreground: #FAFAFA;
+    --muted: #2A2A3E;
+    --muted-foreground: #9CA3AF;
+    --border: #374151;
+    --input: #374151;
+    --card: #2A2A3E;
+    --card-foreground: #FAFAFA;
+    --popover: #2A2A3E;
+    --popover-foreground: #FAFAFA;
+    --secondary: #2A2A3E;
+    --secondary-foreground: #FAFAFA;
+    --accent: #3D2A28;
+    --accent-foreground: #FF8A65;
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Focus ring styles */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
