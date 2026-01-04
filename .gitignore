@@ -46,3 +46,6 @@ yarn-error.log*
 
 # Playwright MCP
 .playwright-mcp/
+
+# Local drafts and working files (not tracked)
+.local/
