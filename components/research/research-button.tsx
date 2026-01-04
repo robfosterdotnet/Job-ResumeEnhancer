@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { Loader2, RefreshCw, CheckCircle, AlertCircle, Search } from "lucide-react"
+import { consumeSSEStream } from "@/lib/utils/sse"
 
 interface ResearchButtonProps {
   jobId: number
@@ -32,6 +33,7 @@ export function ResearchButton({
   const [progressText, setProgressText] = useState("")
   const [error, setError] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const completedRef = useRef(false)
 
   const runResearch = async () => {
     if (!companyId) {
@@ -44,6 +46,7 @@ export function ResearchButton({
     setProgressText("Starting research...")
     setError("")
     setDialogOpen(true)
+    completedRef.current = false
 
     try {
       const response = await fetch("/api/agents/company-research", {
@@ -57,70 +60,28 @@ export function ResearchButton({
         throw new Error(data.error || "Failed to start research")
       }
 
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error("No response stream")
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ""
-
-      let receivedComplete = false
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split("\n")
-        buffer = lines.pop() || ""
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6)
-            if (data === "[DONE]") {
-              receivedComplete = true
-              setStatus("complete")
-              setProgress(100)
-              setProgressText("Research complete!")
-              setTimeout(() => {
-                setDialogOpen(false)
-                router.refresh()
-              }, 1500)
-              return
-            }
-
-            try {
-              const event = JSON.parse(data)
-              if (event.type === "progress") {
-                setProgress(event.percentage)
-                setProgressText(event.message)
-              } else if (event.type === "complete") {
-                receivedComplete = true
-                setStatus("complete")
-                setProgress(100)
-                setProgressText("Research complete!")
-                setTimeout(() => {
-                  setDialogOpen(false)
-                  router.refresh()
-                }, 1500)
-                return
-              } else if (event.type === "error") {
-                throw new Error(event.error || event.message)
-              }
-            } catch (parseErr) {
-              // Re-throw if it's an Error we threw ourselves
-              if (parseErr instanceof Error && parseErr.message) {
-                throw parseErr
-              }
-              // Otherwise ignore JSON parsing errors for non-JSON lines
-            }
+      await consumeSSEStream(response, {
+        onEvent: (event) => {
+          if (event.type === "progress") {
+            setProgress(event.percentage as number)
+            setProgressText(event.message as string)
+          } else if (event.type === "complete") {
+            completedRef.current = true
+            setStatus("complete")
+            setProgress(100)
+            setProgressText("Research complete!")
+            setTimeout(() => {
+              setDialogOpen(false)
+              router.refresh()
+            }, 1500)
+          } else if (event.type === "error") {
+            throw new Error((event.error || event.message) as string)
           }
-        }
-      }
+        },
+      })
 
       // If stream ended without complete event, treat as error
-      if (!receivedComplete) {
+      if (!completedRef.current) {
         throw new Error("Research stream ended unexpectedly")
       }
     } catch (err) {

@@ -269,6 +269,47 @@ npm run db:studio    # Open Drizzle Studio
 | POST | `/api/parse` | Parse uploaded document |
 | POST | `/api/export` | Generate report (JSON/Markdown) |
 
+## Deployment
+
+### Supported Environments
+
+This application uses SQLite with `better-sqlite3`, which requires:
+- Node.js runtime (not Edge runtime)
+- Filesystem access for database storage
+- Native module compilation
+
+**Supported:**
+- Local development
+- Traditional Node.js hosting (VPS, Docker, etc.)
+- Vercel with Node.js runtime (not Edge)
+- AWS EC2, DigitalOcean Droplets, etc.
+
+**NOT Supported:**
+- Vercel Edge Functions
+- Cloudflare Workers
+- AWS Lambda with read-only filesystem (unless using /tmp)
+- Any serverless platform without persistent filesystem
+
+### Database Considerations
+
+For production deployments requiring multiple instances or serverless architecture, consider:
+- **Turso**: SQLite-compatible edge database
+- **PlanetScale**: MySQL-compatible serverless
+- **Supabase**: PostgreSQL with REST API
+- **Neon**: Serverless PostgreSQL
+
+All API routes are configured with `export const runtime = 'nodejs'` to ensure Node.js runtime is used.
+
+### Environment Variables for Production
+
+In addition to the required environment variables, you can configure:
+
+```bash
+# Optional: Set log level (debug, info, warn, error)
+# Defaults to "warn" in production, "debug" in development
+LOG_LEVEL=warn
+```
+
 ## Design
 
 The UI uses Anthropic's brand colors:

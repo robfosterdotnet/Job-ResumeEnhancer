@@ -4,6 +4,19 @@ import * as schema from "./schema"
 import path from "path"
 import fs from "fs"
 
+// Environment checks
+if (typeof window !== "undefined") {
+  throw new Error("Database cannot be used in browser environment")
+}
+
+// Check for Edge runtime - SQLite requires Node.js
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if ((globalThis as any).EdgeRuntime) {
+  throw new Error(
+    "SQLite is not supported in Edge runtime. Ensure your API routes use 'export const runtime = \"nodejs\"'"
+  )
+}
+
 // Ensure data directory exists
 const dataDir = path.join(process.cwd(), "data")
 if (!fs.existsSync(dataDir)) {

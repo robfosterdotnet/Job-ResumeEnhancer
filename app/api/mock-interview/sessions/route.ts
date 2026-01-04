@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { db } from "@/lib/db"
 import { mockInterviewSessions, mockInterviewMetrics, interviewQuestions } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
+import { parseRequestBody } from "@/lib/utils/api-validation"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+const sessionPostSchema = z.object({
+  jobApplicationId: z.coerce.number().int().positive("jobApplicationId is required"),
+  resumeAnalysisId: z.coerce.number().int().positive().optional(),
+  feedbackMode: z.enum(["immediate", "summary"]).default("immediate"),
+  questionCount: z.coerce.number().int().positive().max(50).default(10),
+  selectedCategories: z.array(z.string()).optional(),
+  difficulty: z.enum(["mixed", "easy", "medium", "hard"]).default("mixed"),
+  voiceEnabled: z.boolean().default(false),
+})
 
 // GET /api/mock-interview/sessions - List sessions for a job application
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const searchParams = request.nextUrl.searchParams
     const jobApplicationId = searchParams.get("jobApplicationId")
@@ -16,8 +36,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const jobId = parseInt(jobApplicationId, 10)
+    if (isNaN(jobId) || jobId <= 0) {
+      return NextResponse.json(
+        { error: "jobApplicationId must be a positive integer" },
+        { status: 400 }
+      )
+    }
+
     const sessions = await db.query.mockInterviewSessions.findMany({
-      where: eq(mockInterviewSessions.jobApplicationId, parseInt(jobApplicationId, 10)),
+      where: eq(mockInterviewSessions.jobApplicationId, jobId),
       with: {
         resumeAnalysis: true,
       },
@@ -26,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     // Get metrics for the job application
     const metrics = await db.query.mockInterviewMetrics.findFirst({
-      where: eq(mockInterviewMetrics.jobApplicationId, parseInt(jobApplicationId, 10)),
+      where: eq(mockInterviewMetrics.jobApplicationId, jobId),
     })
 
     return NextResponse.json({ sessions, metrics })
@@ -41,40 +69,22 @@ export async function GET(request: NextRequest) {
 
 // POST /api/mock-interview/sessions - Create a new mock interview session
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
-    const body = await request.json()
+    const parsed = await parseRequestBody(request, sessionPostSchema)
+    if (!parsed.success) return parsed.response
+
     const {
       jobApplicationId,
       resumeAnalysisId,
-      feedbackMode = "immediate",
-      questionCount = 10,
+      feedbackMode,
+      questionCount,
       selectedCategories,
-      difficulty = "mixed",
-      voiceEnabled = false,
-    } = body
-
-    if (!jobApplicationId) {
-      return NextResponse.json(
-        { error: "jobApplicationId is required" },
-        { status: 400 }
-      )
-    }
-
-    // Validate feedbackMode
-    if (!["immediate", "summary"].includes(feedbackMode)) {
-      return NextResponse.json(
-        { error: "feedbackMode must be 'immediate' or 'summary'" },
-        { status: 400 }
-      )
-    }
-
-    // Validate difficulty
-    if (!["mixed", "easy", "medium", "hard"].includes(difficulty)) {
-      return NextResponse.json(
-        { error: "difficulty must be 'mixed', 'easy', 'medium', or 'hard'" },
-        { status: 400 }
-      )
-    }
+      difficulty,
+      voiceEnabled,
+    } = parsed.data
 
     // Get available questions from resume analysis if resumeAnalysisId provided
     let availableQuestionCount = 0

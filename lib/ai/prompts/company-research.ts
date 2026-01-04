@@ -9,7 +9,10 @@ You must respond with a valid JSON object matching this structure:
     "headquarters": string (optional),
     "foundedYear": number (optional),
     "employeeCount": string (optional),
-    "website": string (optional)
+    "website": string (optional),
+    "products": string (optional) - main products or services offered,
+    "targetMarket": string (optional) - primary customer segments,
+    "competitiveAdvantage": string (optional) - what differentiates them from competitors
   },
   "leadership": [
     {

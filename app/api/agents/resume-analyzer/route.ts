@@ -3,9 +3,17 @@ import { db } from "@/lib/db"
 import { jobApplications, resumeAnalyses, interviewQuestions } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { runResumeAnalysis } from "@/lib/ai/agents/resume-analyzer"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 // POST /api/agents/resume-analyzer - Run resume analysis
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { jobApplicationId } = body

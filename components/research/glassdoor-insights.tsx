@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Star, ThumbsUp, ThumbsDown, Briefcase, Clock, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { safeJsonParse } from "@/lib/utils/safe-json"
 
 interface GlassdoorData {
   id: number
@@ -66,8 +67,8 @@ export function GlassdoorInsights({ glassdoor }: GlassdoorInsightsProps) {
     )
   }
 
-  const pros = glassdoor.prosJson ? JSON.parse(glassdoor.prosJson) : []
-  const cons = glassdoor.consJson ? JSON.parse(glassdoor.consJson) : []
+  const pros = safeJsonParse<string[]>(glassdoor.prosJson, [])
+  const cons = safeJsonParse<string[]>(glassdoor.consJson, [])
 
   const ratingCategories = [
     { key: "cultureRating", label: "Culture", icon: Users },

@@ -10,9 +10,17 @@ import {
 } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { runCompanyResearch } from "@/lib/ai/agents/company-researcher"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 // POST /api/agents/company-research - Run company research
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { jobApplicationId, companyId, companyName } = body

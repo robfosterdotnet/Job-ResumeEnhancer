@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useCallback, useEffect, useRef } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChatMessageList } from "./chat-message-list"
 import { ChatInput } from "./chat-input"
 import { MessageCircle } from "lucide-react"
+import { consumeSSEStream } from "@/lib/utils/sse"
 
 interface Message {
   id?: number
@@ -34,14 +35,18 @@ export function ChatInterface({
   initialMessages = [],
 }: ChatInterfaceProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [isLoading, setIsLoading] = useState(false)
   const [currentSessionId, setCurrentSessionId] = useState(sessionId)
+  const hasUpdatedUrl = useRef(false)
 
   // Sync state when session changes (e.g., clicking previous chats)
   useEffect(() => {
     setMessages(initialMessages)
     setCurrentSessionId(sessionId)
+    // Reset the URL update flag when session changes from props
+    hasUpdatedUrl.current = !!sessionId
   }, [sessionId, initialMessages])
 
   const sendMessage = useCallback(
@@ -71,14 +76,7 @@ export function ChatInterface({
           throw new Error(data.error || "Failed to send message")
         }
 
-        const reader = response.body?.getReader()
-        if (!reader) {
-          throw new Error("No response stream")
-        }
-
-        const decoder = new TextDecoder()
         let assistantContent = ""
-        let buffer = ""
 
         // Add placeholder for assistant message
         setMessages((prev) => [
@@ -86,65 +84,44 @@ export function ChatInterface({
           { role: "assistant", content: "", createdAt: new Date() },
         ])
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() || ""
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6)
-              if (data === "[DONE]") {
-                break
-              }
-
-              try {
-                const event = JSON.parse(data)
-                if (event.type === "session") {
-                  setCurrentSessionId(event.sessionId)
-                } else if (event.type === "chunk") {
-                  assistantContent += event.content || ""
-                  setMessages((prev) => {
-                    const newMessages = [...prev]
-                    newMessages[newMessages.length - 1] = {
-                      role: "assistant",
-                      content: assistantContent,
-                      createdAt: new Date(),
-                    }
-                    return newMessages
-                  })
-                } else if (event.type === "complete") {
-                  // Final update - stream complete
-                  setCurrentSessionId(event.sessionId)
-                  setMessages((prev) => {
-                    const newMessages = [...prev]
-                    newMessages[newMessages.length - 1] = {
-                      role: "assistant",
-                      content: assistantContent,
-                      createdAt: new Date(),
-                    }
-                    return newMessages
-                  })
-                } else if (event.type === "error") {
-                  throw new Error(event.error || "Unknown error")
+        await consumeSSEStream(response, {
+          onEvent: (event) => {
+            if (event.type === "chunk") {
+              assistantContent += (event.content as string) || ""
+              setMessages((prev) => {
+                const newMessages = [...prev]
+                newMessages[newMessages.length - 1] = {
+                  role: "assistant",
+                  content: assistantContent,
+                  createdAt: new Date(),
                 }
-              } catch (parseError) {
-                // Only throw if it's an actual error we created
-                if (parseError instanceof Error && parseError.message !== "Unexpected token") {
-                  throw parseError
+                return newMessages
+              })
+            } else if (event.type === "complete") {
+              // Final update - stream complete
+              const newSessionId = event.sessionId as number
+              setCurrentSessionId(newSessionId)
+              setMessages((prev) => {
+                const newMessages = [...prev]
+                newMessages[newMessages.length - 1] = {
+                  role: "assistant",
+                  content: assistantContent,
+                  createdAt: new Date(),
                 }
+                return newMessages
+              })
+
+              // Update URL with session ID if this is a new session
+              if (newSessionId && !hasUpdatedUrl.current) {
+                hasUpdatedUrl.current = true
+                router.replace(`${pathname}?session=${newSessionId}`, { scroll: false })
               }
+            } else if (event.type === "error") {
+              throw new Error((event.error || "Unknown error") as string)
             }
-          }
-        }
+          },
+        })
 
-        // Refresh to update session in URL if needed
-        if (!sessionId && currentSessionId) {
-          router.refresh()
-        }
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to send message"
@@ -160,7 +137,7 @@ export function ChatInterface({
         setIsLoading(false)
       }
     },
-    [jobApplicationId, currentSessionId, sessionId, router]
+    [jobApplicationId, currentSessionId, router, pathname]
   )
 
   return (

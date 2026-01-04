@@ -4,19 +4,19 @@ import { StrengthsWeaknesses } from "@/components/analysis/strengths-weaknesses"
 
 describe("StrengthsWeaknesses", () => {
   const mockStrengths = [
-    { point: "Strong JavaScript skills", explanation: "5+ years of experience with modern JavaScript" },
-    { point: "Team leadership", explanation: "Led teams of 5-10 developers" },
+    { area: "Strong JavaScript skills", description: "5+ years of experience with modern JavaScript" },
+    { area: "Team leadership", description: "Led teams of 5-10 developers" },
   ]
 
   const mockWeaknesses = [
     {
-      point: "Limited cloud experience",
-      explanation: "No AWS certifications",
+      area: "Limited cloud experience",
+      description: "No AWS certifications",
       suggestion: "Consider getting AWS Solutions Architect certification"
     },
     {
-      point: "No management experience",
-      explanation: "Has not managed direct reports",
+      area: "No management experience",
+      description: "Has not managed direct reports",
       suggestion: "Look for opportunities to mentor junior developers"
     },
   ]

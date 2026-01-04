@@ -77,158 +77,19 @@ export function InterviewSession({
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string>("")
   const abortControllerRef = useRef<AbortController | null>(null)
+  const endInterviewRef = useRef<() => Promise<void>>()
+  const currentQuestionRef = useRef<CurrentQuestion | null>(null)
 
   // Speech output for reading questions aloud
   const { speak, stop: stopSpeaking, isSpeaking, toggle: toggleSpeak, isSupported: speechSupported } = useSpeechOutput()
 
-  // Start the interview session
-  const startInterview = useCallback(async () => {
-    setState("loading")
-    setStatusMessage("Starting interview...")
+  // Keep currentQuestionRef in sync with currentQuestion state
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestion
+  }, [currentQuestion])
 
-    try {
-      abortControllerRef.current = new AbortController()
-
-      const response = await fetch("/api/agents/mock-interviewer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, action: "start" }),
-        signal: abortControllerRef.current.signal,
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to start interview")
-      }
-
-      await processStream(response)
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return
-      setError(err instanceof Error ? err.message : "Failed to start interview")
-      setState("error")
-    }
-  }, [sessionId])
-
-  // Submit an answer
-  const submitAnswer = useCallback(
-    async (answer: string) => {
-      setState("evaluating")
-      setStatusMessage("Evaluating your answer...")
-      stopSpeaking()
-
-      try {
-        abortControllerRef.current = new AbortController()
-
-        const response = await fetch("/api/agents/mock-interviewer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, action: "answer", userAnswer: answer }),
-          signal: abortControllerRef.current.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to submit answer")
-        }
-
-        await processStream(response)
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return
-        setError(err instanceof Error ? err.message : "Failed to submit answer")
-        setState("error")
-      }
-    },
-    [sessionId, stopSpeaking]
-  )
-
-  // Skip current question
-  const skipQuestion = useCallback(async () => {
-    setState("evaluating")
-    setStatusMessage("Skipping question...")
-    stopSpeaking()
-
-    try {
-      abortControllerRef.current = new AbortController()
-
-      const response = await fetch("/api/agents/mock-interviewer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, action: "skip" }),
-        signal: abortControllerRef.current.signal,
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to skip question")
-      }
-
-      await processStream(response)
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return
-      setError(err instanceof Error ? err.message : "Failed to skip question")
-      setState("error")
-    }
-  }, [sessionId, stopSpeaking])
-
-  // End the interview
-  const endInterview = useCallback(async () => {
-    setState("loading")
-    setStatusMessage("Generating summary...")
-    stopSpeaking()
-
-    try {
-      abortControllerRef.current = new AbortController()
-
-      const response = await fetch("/api/agents/mock-interviewer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, action: "end" }),
-        signal: abortControllerRef.current.signal,
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to end interview")
-      }
-
-      await processStream(response)
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return
-      setError(err instanceof Error ? err.message : "Failed to end interview")
-      setState("error")
-    }
-  }, [sessionId, stopSpeaking])
-
-  // Process SSE stream
-  const processStream = async (response: Response) => {
-    const reader = response.body?.getReader()
-    if (!reader) throw new Error("No response stream")
-
-    const decoder = new TextDecoder()
-    let buffer = ""
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split("\n")
-      buffer = lines.pop() || ""
-
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6)
-          if (data === "[DONE]") break
-
-          try {
-            const event = JSON.parse(data)
-            handleEvent(event)
-          } catch {
-            // Ignore parse errors
-          }
-        }
-      }
-    }
-  }
-
-  // Handle SSE events
-  const handleEvent = (event: Record<string, unknown>) => {
+  // Handle SSE events - using useCallback to memoize
+  const handleEvent = useCallback((event: Record<string, unknown>) => {
     switch (event.type) {
       case "status":
         setStatusMessage(event.message as string || "")
@@ -255,7 +116,7 @@ export function InterviewSession({
         setCurrentQuestion({
           questionText: event.questionText as string,
           category: "follow-up",
-          difficulty: currentQuestion?.difficulty || "medium",
+          difficulty: currentQuestionRef.current?.difficulty || "medium",
           questionNumber: event.questionNumber as number,
           totalQuestions: event.totalQuestions as number,
           isFollowUp: true,
@@ -290,8 +151,8 @@ export function InterviewSession({
         break
 
       case "interview_complete":
-        // Interview is done, need to end it
-        endInterview()
+        // Interview is done, need to end it - use ref to avoid circular dependency
+        endInterviewRef.current?.()
         break
 
       case "summary":
@@ -307,10 +168,13 @@ export function InterviewSession({
         break
 
       case "complete":
-        if (!summary) {
-          // If we got complete without summary, interview ended
-          setState("summary")
-        }
+        setSummary((currentSummary) => {
+          if (!currentSummary) {
+            // If we got complete without summary, interview ended
+            setState("summary")
+          }
+          return currentSummary
+        })
         break
 
       case "error":
@@ -322,7 +186,158 @@ export function InterviewSession({
         // Stream complete
         break
     }
-  }
+  }, [voiceEnabled, speechSupported, speak])
+
+  // Process SSE stream - using useCallback to memoize
+  const processStream = useCallback(async (response: Response) => {
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error("No response stream")
+
+    const decoder = new TextDecoder()
+    let buffer = ""
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split("\n")
+      buffer = lines.pop() || ""
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6)
+          if (data === "[DONE]") break
+
+          try {
+            const event = JSON.parse(data)
+            handleEvent(event)
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+  }, [handleEvent])
+
+  // Start the interview session
+  const startInterview = useCallback(async () => {
+    setState("loading")
+    setStatusMessage("Starting interview...")
+
+    try {
+      abortControllerRef.current = new AbortController()
+
+      const response = await fetch("/api/agents/mock-interviewer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, action: "start" }),
+        signal: abortControllerRef.current.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to start interview")
+      }
+
+      await processStream(response)
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return
+      setError(err instanceof Error ? err.message : "Failed to start interview")
+      setState("error")
+    }
+  }, [sessionId, processStream])
+
+  // Submit an answer
+  const submitAnswer = useCallback(
+    async (answer: string) => {
+      setState("evaluating")
+      setStatusMessage("Evaluating your answer...")
+      stopSpeaking()
+
+      try {
+        abortControllerRef.current = new AbortController()
+
+        const response = await fetch("/api/agents/mock-interviewer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, action: "answer", userAnswer: answer }),
+          signal: abortControllerRef.current.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to submit answer")
+        }
+
+        await processStream(response)
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return
+        setError(err instanceof Error ? err.message : "Failed to submit answer")
+        setState("error")
+      }
+    },
+    [sessionId, stopSpeaking, processStream]
+  )
+
+  // Skip current question
+  const skipQuestion = useCallback(async () => {
+    setState("evaluating")
+    setStatusMessage("Skipping question...")
+    stopSpeaking()
+
+    try {
+      abortControllerRef.current = new AbortController()
+
+      const response = await fetch("/api/agents/mock-interviewer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, action: "skip" }),
+        signal: abortControllerRef.current.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to skip question")
+      }
+
+      await processStream(response)
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return
+      setError(err instanceof Error ? err.message : "Failed to skip question")
+      setState("error")
+    }
+  }, [sessionId, stopSpeaking, processStream])
+
+  // End the interview
+  const endInterview = useCallback(async () => {
+    setState("loading")
+    setStatusMessage("Generating summary...")
+    stopSpeaking()
+
+    try {
+      abortControllerRef.current = new AbortController()
+
+      const response = await fetch("/api/agents/mock-interviewer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, action: "end" }),
+        signal: abortControllerRef.current.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to end interview")
+      }
+
+      await processStream(response)
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return
+      setError(err instanceof Error ? err.message : "Failed to end interview")
+      setState("error")
+    }
+  }, [sessionId, stopSpeaking, processStream])
+
+  // Keep endInterviewRef in sync
+  useEffect(() => {
+    endInterviewRef.current = endInterview
+  }, [endInterview])
 
   // Start interview on mount
   useEffect(() => {

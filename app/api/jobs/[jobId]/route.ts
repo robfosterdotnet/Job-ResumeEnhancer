@@ -2,11 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { jobApplications, companies } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 type RouteParams = { params: Promise<{ jobId: string }> }
 
 // GET /api/jobs/[jobId] - Get a single job application
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { jobId } = await params
     const id = parseInt(jobId, 10)
@@ -49,6 +57,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PUT /api/jobs/[jobId] - Update a job application
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { jobId } = await params
     const id = parseInt(jobId, 10)
@@ -116,6 +127,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/jobs/[jobId] - Delete a job application
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { jobId } = await params
     const id = parseInt(jobId, 10)

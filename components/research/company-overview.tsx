@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { safeJsonParse } from "@/lib/utils/safe-json"
 import {
   Building2,
   Globe,
@@ -30,9 +31,7 @@ interface CompanyOverviewProps {
 }
 
 export function CompanyOverview({ company, research }: CompanyOverviewProps) {
-  const coreBusiness = research?.coreBusinessJson
-    ? JSON.parse(research.coreBusinessJson)
-    : null
+  const coreBusiness = safeJsonParse(research?.coreBusinessJson, null)
 
   return (
     <Card>
@@ -120,14 +119,18 @@ export function CompanyOverview({ company, research }: CompanyOverviewProps) {
           )}
         </div>
 
-        {/* Core Business */}
-        {coreBusiness && (
+        {/* Core Business - show if any relevant data exists */}
+        {coreBusiness && (coreBusiness.products || coreBusiness.targetMarket || coreBusiness.competitiveAdvantage || coreBusiness.description) && (
           <div className="pt-4 border-t">
             <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Core Business
             </h4>
             <div className="space-y-2">
+              {/* Fallback to description if no specific business fields */}
+              {!coreBusiness.products && !coreBusiness.targetMarket && !coreBusiness.competitiveAdvantage && coreBusiness.description && (
+                <p className="text-sm text-muted-foreground">{coreBusiness.description}</p>
+              )}
               {coreBusiness.products && (
                 <div>
                   <p className="text-xs text-muted-foreground">Products/Services</p>

@@ -15,6 +15,11 @@ import {
   type InterviewContext,
   type ResponseRecord,
 } from "@/lib/ai/agents/mock-interviewer"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 type ActionType = "start" | "answer" | "skip" | "end"
 
@@ -26,6 +31,9 @@ interface RequestBody {
 
 // POST /api/agents/mock-interviewer - Main interview agent (streaming)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const body: RequestBody = await request.json()
     const { sessionId, action, userAnswer } = body

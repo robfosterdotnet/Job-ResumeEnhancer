@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio"
+import { safeFetch, readResponseWithLimit } from "@/lib/utils/url-validator"
 
 export interface ScrapedJobDescription {
   title?: string
@@ -11,9 +12,18 @@ export interface ScrapedJobDescription {
   rawHtml?: string
 }
 
+/**
+ * Scrapes a job description from a URL with SSRF protection.
+ *
+ * @param url - The URL to scrape
+ * @returns Parsed job description data
+ * @throws Error if URL is blocked (SSRF protection) or fetch fails
+ */
 export async function scrapeJobUrl(url: string): Promise<ScrapedJobDescription> {
   try {
-    const response = await fetch(url, {
+    const response = await safeFetch(url, {
+      timeout: 30000, // 30s timeout
+      maxContentSize: 5 * 1024 * 1024, // 5MB max
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -25,10 +35,16 @@ export async function scrapeJobUrl(url: string): Promise<ScrapedJobDescription> 
       throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`)
     }
 
-    const html = await response.text()
+    // Read response with size limit
+    const html = await readResponseWithLimit(response, 5 * 1024 * 1024)
     return parseJobHtml(html)
   } catch (error) {
-    throw new Error(`Failed to scrape job URL: ${error instanceof Error ? error.message : "Unknown error"}`)
+    const message = error instanceof Error ? error.message : "Unknown error"
+    // Preserve SSRF-related error messages for the API to return appropriate status
+    if (message.includes("private") || message.includes("internal") || message.includes("metadata") || message.includes("not allowed")) {
+      throw new Error(`URL blocked: ${message}`)
+    }
+    throw new Error(`Failed to scrape job URL: ${message}`)
   }
 }
 

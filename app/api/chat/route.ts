@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { db } from "@/lib/db"
 import {
   chatSessions,
@@ -9,16 +10,29 @@ import {
 } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { streamChatCompletion, type ChatMessage } from "@/lib/ai/client"
+import { parseRequestBody } from "@/lib/utils/api-validation"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+const chatPostSchema = z.object({
+  sessionId: z.coerce.number().int().positive().optional(),
+  jobApplicationId: z.coerce.number().int().positive().optional(),
+  message: z.string().min(1, "Message is required"),
+})
 
 // POST /api/chat - Send a message and get AI response
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { sessionId, jobApplicationId, message } = body
+  const authError = requireAuth(request)
+  if (authError) return authError
 
-    if (!message) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 })
-    }
+  try {
+    const parsed = await parseRequestBody(request, chatPostSchema)
+    if (!parsed.success) return parsed.response
+
+    const { sessionId, jobApplicationId, message } = parsed.data
 
     let session: typeof chatSessions.$inferSelect | undefined
 

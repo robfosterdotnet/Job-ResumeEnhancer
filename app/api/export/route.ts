@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { jobApplications, resumeAnalyses, companyResearch } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
+import { safeJsonParse } from "@/lib/utils/safe-json"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 // POST /api/export - Generate a report for a job application
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { jobApplicationId, format = "json" } = body
@@ -52,7 +61,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Build report data
+    // Build report data using safe JSON parsing
     const report = {
       generatedAt: new Date().toISOString(),
       jobApplication: {
@@ -67,28 +76,20 @@ export async function POST(request: NextRequest) {
         ? {
             fitScore: analysis.fitScore,
             summary: analysis.overallSummary,
-            strengths: analysis.strengthsJson ? JSON.parse(analysis.strengthsJson) : [],
-            weaknesses: analysis.weaknessesJson ? JSON.parse(analysis.weaknessesJson) : [],
-            enhancements: analysis.enhancementSuggestionsJson
-              ? JSON.parse(analysis.enhancementSuggestionsJson)
-              : [],
-            skillGaps: analysis.skillGapsJson ? JSON.parse(analysis.skillGapsJson) : [],
-            keywordsMatched: analysis.keywordsMatchedJson
-              ? JSON.parse(analysis.keywordsMatchedJson)
-              : [],
-            keywordsMissing: analysis.keywordsMissingJson
-              ? JSON.parse(analysis.keywordsMissingJson)
-              : [],
+            strengths: safeJsonParse(analysis.strengthsJson, []),
+            weaknesses: safeJsonParse(analysis.weaknessesJson, []),
+            enhancements: safeJsonParse(analysis.enhancementSuggestionsJson, []),
+            skillGaps: safeJsonParse(analysis.skillGapsJson, []),
+            keywordsMatched: safeJsonParse(analysis.keywordsMatchedJson, []),
+            keywordsMissing: safeJsonParse(analysis.keywordsMissingJson, []),
             interviewQuestions: analysis.interviewQuestions,
           }
         : null,
       companyResearch: research
         ? {
-            overview: research.coreBusinessJson ? JSON.parse(research.coreBusinessJson) : null,
-            culture: research.cultureValuesJson ? JSON.parse(research.cultureValuesJson) : null,
-            ethicsAlignment: research.ethicsAlignmentJson
-              ? JSON.parse(research.ethicsAlignmentJson)
-              : null,
+            overview: safeJsonParse(research.coreBusinessJson, null),
+            culture: safeJsonParse(research.cultureValuesJson, null),
+            ethicsAlignment: safeJsonParse(research.ethicsAlignmentJson, null),
             leadership: research.leadershipTeam,
             news: research.news,
             legalIssues: research.legalIssues,

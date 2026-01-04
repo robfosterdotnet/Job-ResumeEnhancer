@@ -1,19 +1,48 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { db } from "@/lib/db"
 import { jobApplications, companies } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
+import { parseRequestBody } from "@/lib/utils/api-validation"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+const jobStatusEnum = z.enum([
+  "saved",
+  "analyzing",
+  "analyzed",
+  "applied",
+  "interviewing",
+  "offered",
+  "accepted",
+  "rejected",
+  "withdrawn",
+])
+
+const jobPostSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  companyName: z.string().optional(),
+  jobDescriptionText: z.string().min(1, "Job description is required"),
+  jobDescriptionUrl: z.string().url().optional().or(z.literal("")),
+  notes: z.string().optional(),
+})
 
 // GET /api/jobs - List all job applications
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get("status")
-    const limit = parseInt(searchParams.get("limit") || "50", 10)
-    const offset = parseInt(searchParams.get("offset") || "0", 10)
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100)
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0)
 
-    type JobStatus = "saved" | "analyzing" | "analyzed" | "applied" | "interviewing" | "offered" | "accepted" | "rejected" | "withdrawn"
-    const validStatuses: JobStatus[] = ["saved", "analyzing", "analyzed", "applied", "interviewing", "offered", "accepted", "rejected", "withdrawn"]
-    const statusFilter = status && validStatuses.includes(status as JobStatus) ? status as JobStatus : undefined
+    const statusResult = jobStatusEnum.safeParse(status)
+    const statusFilter = statusResult.success ? statusResult.data : undefined
 
     const jobs = await db.query.jobApplications.findMany({
       where: statusFilter ? eq(jobApplications.status, statusFilter) : undefined,
@@ -38,16 +67,14 @@ export async function GET(request: NextRequest) {
 
 // POST /api/jobs - Create a new job application
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { title, companyName, jobDescriptionText, jobDescriptionUrl, notes } = body
+  const authError = requireAuth(request)
+  if (authError) return authError
 
-    if (!title || !jobDescriptionText) {
-      return NextResponse.json(
-        { error: "Title and job description are required" },
-        { status: 400 }
-      )
-    }
+  try {
+    const parsed = await parseRequestBody(request, jobPostSchema)
+    if (!parsed.success) return parsed.response
+
+    const { title, companyName, jobDescriptionText, jobDescriptionUrl, notes } = parsed.data
 
     // Create or find company
     let companyId: number | undefined

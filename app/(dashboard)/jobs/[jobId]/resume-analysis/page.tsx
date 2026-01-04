@@ -8,6 +8,7 @@ import { jobApplications } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { ArrowLeft, RefreshCw, FileText, Calendar } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { safeJsonParse } from "@/lib/utils/safe-json"
 import {
   FitScoreGauge,
   StrengthsWeaknesses,
@@ -53,19 +54,13 @@ export default async function ResumeAnalysisPage({ params }: PageProps) {
   const analysis = job.analyses?.[0]
   const hasResume = !!job.resume
 
-  // Parse JSON fields from analysis
-  const strengths = analysis?.strengthsJson ? JSON.parse(analysis.strengthsJson) : []
-  const weaknesses = analysis?.weaknessesJson ? JSON.parse(analysis.weaknessesJson) : []
-  const enhancements = analysis?.enhancementSuggestionsJson
-    ? JSON.parse(analysis.enhancementSuggestionsJson)
-    : []
-  const skillGaps = analysis?.skillGapsJson ? JSON.parse(analysis.skillGapsJson) : []
-  const matchedKeywords = analysis?.keywordsMatchedJson
-    ? JSON.parse(analysis.keywordsMatchedJson)
-    : []
-  const missingKeywords = analysis?.keywordsMissingJson
-    ? JSON.parse(analysis.keywordsMissingJson)
-    : []
+  // Parse JSON fields from analysis using safe parsing
+  const strengths = safeJsonParse(analysis?.strengthsJson, [])
+  const weaknesses = safeJsonParse(analysis?.weaknessesJson, [])
+  const enhancements = safeJsonParse(analysis?.enhancementSuggestionsJson, [])
+  const skillGaps = safeJsonParse(analysis?.skillGapsJson, [])
+  const matchedKeywords = safeJsonParse(analysis?.keywordsMatchedJson, [])
+  const missingKeywords = safeJsonParse(analysis?.keywordsMissingJson, [])
   const interviewQuestions = analysis?.interviewQuestions || []
 
   return (

@@ -1,5 +1,6 @@
 import { search, SafeSearchType } from "duck-duck-scrape"
 import { searchBrave, isBraveConfigured } from "./brave-search"
+import { logger, sanitizeForLog } from "@/lib/utils/logger"
 
 export interface SearchResult {
   title: string
@@ -33,7 +34,7 @@ async function retryWithBackoff<T>(
       return await fn()
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
-      console.warn(`Attempt ${attempt + 1} failed: ${lastError.message}`)
+      logger.warn(`Search attempt ${attempt + 1} failed`, { error: lastError.message })
     }
   }
   throw lastError
@@ -75,19 +76,19 @@ export async function webSearch(
   // Try Brave Search first if configured
   if (isBraveConfigured()) {
     try {
-      console.log(`[Search] Using Brave Search for: ${query}`)
+      logger.debug("Using Brave Search", { query: sanitizeForLog(query, 100) })
       return await searchBrave(query, maxResults)
     } catch (error) {
-      console.warn("Brave Search failed, falling back to DuckDuckGo:", error)
+      logger.warn("Brave Search failed, falling back to DuckDuckGo", { error: error instanceof Error ? error.message : String(error) })
     }
   }
 
   // Fall back to DuckDuckGo
   try {
-    console.log(`[Search] Using DuckDuckGo for: ${query}`)
+    logger.debug("Using DuckDuckGo", { query: sanitizeForLog(query, 100) })
     return await searchDuckDuckGoInternal(query, options)
   } catch (error) {
-    console.error("DuckDuckGo search failed:", error)
+    logger.error("DuckDuckGo search failed", error)
     return []
   }
 }

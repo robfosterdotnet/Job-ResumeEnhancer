@@ -1,9 +1,17 @@
+/**
+ * Secure file storage utility.
+ *
+ * IMPORTANT: Files are stored outside public/ directory to prevent direct access.
+ * Use the authenticated file serving API route to download files.
+ */
 import fs from "fs/promises"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./public/uploads"
-const EXPORT_DIR = process.env.EXPORT_DIR || "./public/exports"
+// SECURITY: Default to data/ directory, NOT public/
+// Files in public/ are directly accessible via URL
+const UPLOAD_DIR = process.env.UPLOAD_DIR || "./data/uploads"
+const EXPORT_DIR = process.env.EXPORT_DIR || "./data/exports"
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || "10", 10)
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
@@ -93,11 +101,15 @@ export async function saveExport(
   return filePath
 }
 
-export function getPublicUrl(filePath: string): string {
-  // Convert absolute path to public URL
-  const publicPath = filePath
-    .replace(/^.*public/, "")
-    .replace(/\\/g, "/")
-
-  return publicPath
+/**
+ * @deprecated Files are no longer served from public/ directory for security.
+ * Use the authenticated file download API route instead: /api/files/[...path]
+ *
+ * This function is kept for backward compatibility but returns an empty string.
+ */
+export function getPublicUrl(_filePath: string): string {
+  console.warn(
+    "getPublicUrl is deprecated. Files are now served through authenticated API routes."
+  )
+  return ""
 }

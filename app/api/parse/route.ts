@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { parseDocument, detectFileType } from "@/lib/parsers"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// Document parsing requires Node.js runtime for native modules
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 // POST /api/parse - Parse a document (PDF, DOCX, TXT)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File | null

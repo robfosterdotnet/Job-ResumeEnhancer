@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Clock,
 } from "lucide-react"
+import { safeJsonParse } from "@/lib/utils/safe-json"
 
 type PageProps = {
   params: Promise<{ jobId: string; sessionId: string }>
@@ -136,13 +137,9 @@ export default function MockInterviewReviewPage({ params }: PageProps) {
     )
   }
 
-  // Parse JSON fields
-  const strengthAreas = session?.strengthAreasJson
-    ? JSON.parse(session.strengthAreasJson)
-    : []
-  const improvementAreas = session?.improvementAreasJson
-    ? JSON.parse(session.improvementAreasJson)
-    : []
+  // Parse JSON fields using safe parsing
+  const strengthAreas = safeJsonParse<string[]>(session?.strengthAreasJson, [])
+  const improvementAreas = safeJsonParse<string[]>(session?.improvementAreasJson, [])
 
   const answeredResponses =
     session?.responses.filter((r) => r.userAnswer && r.userAnswer !== "[SKIPPED]") || []
@@ -263,12 +260,8 @@ export default function MockInterviewReviewPage({ params }: PageProps) {
                   </p>
                 ) : (
                   answeredResponses.map((response, index) => {
-                    const keyPointsCovered = response.keyPointsCoveredJson
-                      ? JSON.parse(response.keyPointsCoveredJson)
-                      : []
-                    const keyPointsMissed = response.keyPointsMissedJson
-                      ? JSON.parse(response.keyPointsMissedJson)
-                      : []
+                    const keyPointsCovered = safeJsonParse<string[]>(response.keyPointsCoveredJson, [])
+                    const keyPointsMissed = safeJsonParse<string[]>(response.keyPointsMissedJson, [])
 
                     return (
                       <div key={response.id} className="border rounded-lg p-4 space-y-4">

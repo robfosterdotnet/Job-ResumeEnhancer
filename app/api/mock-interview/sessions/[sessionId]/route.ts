@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { mockInterviewSessions, mockInterviewResponses, mockInterviewMetrics } from "@/lib/db/schema"
+import { mockInterviewSessions, mockInterviewResponses } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>
@@ -9,6 +14,9 @@ interface RouteParams {
 
 // GET /api/mock-interview/sessions/[sessionId] - Get a specific session
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { sessionId } = await params
     const id = parseInt(sessionId, 10)
@@ -53,6 +61,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/mock-interview/sessions/[sessionId] - Update a session
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { sessionId } = await params
     const id = parseInt(sessionId, 10)
@@ -137,47 +148,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .set(updates)
       .where(eq(mockInterviewSessions.id, id))
 
-    // If session was just completed, update metrics
-    if (status === "completed" && existingSession.status !== "completed") {
-      const metrics = await db.query.mockInterviewMetrics.findFirst({
-        where: eq(mockInterviewMetrics.jobApplicationId, existingSession.jobApplicationId),
-      })
-
-      if (metrics) {
-        // Calculate new average score
-        const completedSessions = (metrics.completedSessions || 0) + 1
-        const currentAvg = metrics.averageScore || 0
-        const newAvg = overallScore
-          ? (currentAvg * (completedSessions - 1) + overallScore) / completedSessions
-          : currentAvg
-
-        // Update score history
-        let scoreHistory: Array<{ date: string; score: number }> = []
-        if (metrics.scoreHistoryJson) {
-          try {
-            scoreHistory = JSON.parse(metrics.scoreHistoryJson)
-          } catch {
-            scoreHistory = []
-          }
-        }
-        if (overallScore) {
-          scoreHistory.push({
-            date: new Date().toISOString(),
-            score: overallScore,
-          })
-        }
-
-        await db
-          .update(mockInterviewMetrics)
-          .set({
-            completedSessions,
-            averageScore: newAvg,
-            scoreHistoryJson: JSON.stringify(scoreHistory),
-            updatedAt: new Date(),
-          })
-          .where(eq(mockInterviewMetrics.jobApplicationId, existingSession.jobApplicationId))
-      }
-    }
+    // Note: Metrics are updated by the mock-interviewer agent's handleEnd function,
+    // which has complete category score information. We don't update metrics here
+    // to avoid double-counting completed sessions.
 
     // Fetch updated session
     const updatedSession = await db.query.mockInterviewSessions.findFirst({
@@ -202,6 +175,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/mock-interview/sessions/[sessionId] - Delete a session
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { sessionId } = await params
     const id = parseInt(sessionId, 10)

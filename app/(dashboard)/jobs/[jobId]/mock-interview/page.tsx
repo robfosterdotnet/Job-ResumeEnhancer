@@ -15,6 +15,7 @@ import {
   type InterviewConfig,
 } from "@/components/mock-interview"
 import { ArrowLeft, Play, MessageSquare, RefreshCw, AlertCircle } from "lucide-react"
+import { safeJsonParse } from "@/lib/utils/safe-json"
 
 type PageProps = { params: Promise<{ jobId: string }> }
 
@@ -153,10 +154,8 @@ export default function MockInterviewPage({ params }: PageProps) {
     }
   }
 
-  // Parse score history from metrics
-  const scoreHistory = metrics?.scoreHistoryJson
-    ? JSON.parse(metrics.scoreHistoryJson)
-    : []
+  // Parse score history from metrics using safe parsing
+  const scoreHistory = safeJsonParse(metrics?.scoreHistoryJson, [])
 
   if (isNaN(id)) {
     return (

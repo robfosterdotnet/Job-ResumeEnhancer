@@ -8,6 +8,7 @@ import { jobApplications, companyResearch } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { ArrowLeft, Building2, Calendar, Search } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { safeJsonParse } from "@/lib/utils/safe-json"
 import {
   CompanyOverview,
   LeadershipTeam,
@@ -74,10 +75,8 @@ export default async function CompanyResearchPage({ params }: PageProps) {
   const hasCompany = !!job.company
   const hasResearch = !!research
 
-  // Parse JSON fields
-  const ethicsData = research?.ethicsAlignmentJson
-    ? JSON.parse(research.ethicsAlignmentJson)
-    : null
+  // Parse JSON fields using safe parsing
+  const ethicsData = safeJsonParse(research?.ethicsAlignmentJson, null)
   const glassdoor = research?.glassdoorInsights?.[0] || null
 
   return (

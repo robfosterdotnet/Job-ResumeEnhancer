@@ -78,6 +78,10 @@ export const CompanyResearchSchema = z.object({
     foundedYear: z.number().optional().nullable(),
     employeeCount: z.string().optional().nullable(),
     website: z.string().optional().nullable(),
+    // Core business fields expected by the UI
+    products: z.string().optional().nullable(),
+    targetMarket: z.string().optional().nullable(),
+    competitiveAdvantage: z.string().optional().nullable(),
   }),
   leadership: z.array(LeaderSchema).default([]),
   financials: FinancialsSchema.optional().nullable(),

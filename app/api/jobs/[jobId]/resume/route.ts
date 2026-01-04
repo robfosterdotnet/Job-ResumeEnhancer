@@ -4,11 +4,19 @@ import { jobApplications, resumes } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { parseDocument, detectFileType } from "@/lib/parsers"
 import { saveUploadedFile } from "@/lib/utils/file-storage"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 type RouteParams = { params: Promise<{ jobId: string }> }
 
 // POST /api/jobs/[jobId]/resume - Upload or paste resume
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const { jobId } = await params
     const id = parseInt(jobId, 10)

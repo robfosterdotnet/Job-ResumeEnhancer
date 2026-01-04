@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { mockInterviewMetrics, mockInterviewSessions } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
+import { requireAuth } from "@/lib/auth/middleware"
+
+// SQLite requires Node.js runtime
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 // GET /api/mock-interview/analytics - Get performance analytics
 export async function GET(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const searchParams = request.nextUrl.searchParams
     const jobApplicationId = searchParams.get("jobApplicationId")
