@@ -271,44 +271,427 @@ npm run db:studio    # Open Drizzle Studio
 
 ## Deployment
 
-### Supported Environments
+### Platform Requirements
 
 This application uses SQLite with `better-sqlite3`, which requires:
 - Node.js runtime (not Edge runtime)
 - Filesystem access for database storage
 - Native module compilation
 
-**Supported:**
-- Local development
-- Traditional Node.js hosting (VPS, Docker, etc.)
-- Vercel with Node.js runtime (not Edge)
-- AWS EC2, DigitalOcean Droplets, etc.
+**Supported Platforms:**
+- Vercel (with Node.js runtime)
+- Docker containers
+- Traditional VPS (DigitalOcean, Linode, AWS EC2, etc.)
+- Self-hosted servers
 
 **NOT Supported:**
 - Vercel Edge Functions
 - Cloudflare Workers
-- AWS Lambda with read-only filesystem (unless using /tmp)
+- AWS Lambda (read-only filesystem)
 - Any serverless platform without persistent filesystem
 
-### Database Considerations
+---
 
-For production deployments requiring multiple instances or serverless architecture, consider:
-- **Turso**: SQLite-compatible edge database
-- **PlanetScale**: MySQL-compatible serverless
-- **Supabase**: PostgreSQL with REST API
-- **Neon**: Serverless PostgreSQL
+### Option 1: Deploy to Vercel (Recommended)
 
-All API routes are configured with `export const runtime = 'nodejs'` to ensure Node.js runtime is used.
+Vercel is the easiest deployment option for Next.js applications.
 
-### Environment Variables for Production
+#### Prerequisites
+- [Vercel account](https://vercel.com/signup)
+- [Vercel CLI](https://vercel.com/cli) installed (optional)
+- GitHub repository connected to Vercel
 
-In addition to the required environment variables, you can configure:
+#### Step 1: Import Project
+
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your GitHub repository
+3. Vercel will auto-detect Next.js settings
+
+#### Step 2: Configure Environment Variables
+
+In the Vercel dashboard, go to **Settings → Environment Variables** and add:
 
 ```bash
-# Optional: Set log level (debug, info, warn, error)
-# Defaults to "warn" in production, "debug" in development
+# Required - Azure OpenAI
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_KEY=your-api-key
+AZURE_OPENAI_DEPLOYMENT=gpt-5.2
+AZURE_OPENAI_API_VERSION=2024-07-01-preview
+
+# Required - Database (Vercel creates this path automatically)
+DATABASE_URL=file:./data/resume-enhancer.db
+
+# Required - Authentication
+AUTH_SECRET_TOKEN=your-secure-random-token-min-32-chars
+
+# Optional - Web Search (falls back to DuckDuckGo)
+BRAVE_SEARCH_API_KEY=your-brave-api-key
+
+# Optional - Logging
 LOG_LEVEL=warn
 ```
+
+**Generate a secure AUTH_SECRET_TOKEN:**
+```bash
+openssl rand -base64 32
+```
+
+#### Step 3: Deploy
+
+```bash
+# Using Vercel CLI
+vercel --prod
+
+# Or push to main branch for automatic deployment
+git push origin main
+```
+
+#### Step 4: Initialize Database
+
+After the first deployment, the database will be created automatically when you first access the application.
+
+#### Vercel Limitations
+
+- **SQLite persistence**: Vercel's serverless functions have ephemeral filesystems. The SQLite database will reset on each deployment or cold start. For persistent data:
+  - Use Vercel's KV, Postgres, or Blob storage
+  - Or migrate to a cloud database (see Database Migration section)
+- **Function timeout**: Default 10s (Pro: 60s, Enterprise: 900s). AI operations may need longer timeouts.
+
+---
+
+### Option 2: Deploy with Docker
+
+Docker provides consistent deployments across any infrastructure.
+
+#### Dockerfile
+
+Create a `Dockerfile` in the project root:
+
+```dockerfile
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat python3 make g++
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Create data directory for SQLite
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
+```
+
+#### Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/resume-enhancer.db
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - AUTH_SECRET_TOKEN=${AUTH_SECRET_TOKEN}
+      - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY}
+      - LOG_LEVEL=warn
+    volumes:
+      - app-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  app-data:
+```
+
+#### Build and Run
+
+```bash
+# Create .env file with your credentials
+cp .env.example .env
+# Edit .env with your values
+
+# Build and start
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+#### Update next.config.ts for Standalone Output
+
+Add to `next.config.ts`:
+
+```typescript
+const nextConfig = {
+  output: 'standalone',
+  // ... other config
+};
+```
+
+---
+
+### Option 3: Deploy to VPS (DigitalOcean, Linode, AWS EC2)
+
+For traditional server deployment with full control.
+
+#### Step 1: Server Setup
+
+```bash
+# SSH into your server
+ssh user@your-server-ip
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install build tools (required for better-sqlite3)
+sudo apt install -y build-essential python3
+
+# Install PM2 for process management
+sudo npm install -g pm2
+
+# Install nginx (optional, for reverse proxy)
+sudo apt install -y nginx
+```
+
+#### Step 2: Clone and Setup
+
+```bash
+# Clone repository
+git clone https://github.com/robfosterdotnet/Job-ResumeEnhancer.git
+cd Job-ResumeEnhancer
+
+# Install dependencies
+npm ci
+
+# Create environment file
+cp .env.example .env
+nano .env  # Add your credentials
+
+# Initialize database
+npm run db:push
+
+# Build application
+npm run build
+```
+
+#### Step 3: Configure PM2
+
+Create `ecosystem.config.js`:
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'job-resume-enhancer',
+    script: 'npm',
+    args: 'start',
+    cwd: '/home/user/Job-ResumeEnhancer',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G'
+  }]
+};
+```
+
+Start with PM2:
+
+```bash
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup  # Follow instructions to enable startup on boot
+```
+
+#### Step 4: Configure Nginx (Recommended)
+
+Create `/etc/nginx/sites-available/job-resume-enhancer`:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;  # Longer timeout for AI operations
+    }
+
+    # Increase body size for resume uploads
+    client_max_body_size 10M;
+}
+```
+
+Enable the site:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/job-resume-enhancer /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+#### Step 5: SSL with Certbot (Recommended)
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
+
+---
+
+### Database Migration (For Scalable Deployments)
+
+If you need multi-instance deployments or serverless with persistent data, migrate from SQLite to a cloud database.
+
+#### Option A: Turso (SQLite-compatible)
+
+```bash
+# Install Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Create database
+turso db create job-resume-enhancer
+
+# Get connection URL
+turso db show job-resume-enhancer --url
+
+# Update .env
+DATABASE_URL=libsql://your-db.turso.io?authToken=your-token
+```
+
+Update `lib/db/index.ts` to use `@libsql/client` instead of `better-sqlite3`.
+
+#### Option B: PostgreSQL (Neon, Supabase, or self-hosted)
+
+1. Create a PostgreSQL database
+2. Update `lib/db/schema.ts` to use PostgreSQL types
+3. Update `lib/db/index.ts` to use `drizzle-orm/postgres-js`
+4. Run migrations: `npm run db:push`
+
+---
+
+### Environment Variables Reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AZURE_OPENAI_ENDPOINT` | Yes | Azure OpenAI resource endpoint |
+| `AZURE_OPENAI_API_KEY` | Yes | Azure OpenAI API key |
+| `AZURE_OPENAI_DEPLOYMENT` | Yes | Model deployment name (e.g., gpt-5.2) |
+| `AZURE_OPENAI_API_VERSION` | Yes | API version (e.g., 2024-07-01-preview) |
+| `DATABASE_URL` | Yes | SQLite path (e.g., file:./data/resume-enhancer.db) |
+| `AUTH_SECRET_TOKEN` | Yes* | Bearer token for API authentication (* required in production) |
+| `BRAVE_SEARCH_API_KEY` | No | Brave Search API key (falls back to DuckDuckGo) |
+| `LOG_LEVEL` | No | Logging level: debug, info, warn, error (default: warn in prod) |
+
+---
+
+### Authentication
+
+All API routes require authentication in production. Include the bearer token in requests:
+
+```bash
+curl -H "Authorization: Bearer your-auth-secret-token" \
+  https://your-domain.com/api/jobs
+```
+
+The frontend automatically includes the token from the `AUTH_SECRET_TOKEN` environment variable.
+
+---
+
+### Health Checks
+
+The application exposes a health endpoint for monitoring:
+
+```bash
+curl https://your-domain.com/api/health
+# Returns: { "status": "ok", "timestamp": "..." }
+```
+
+---
+
+### Troubleshooting
+
+**Build fails with `better-sqlite3` errors:**
+```bash
+# Install build dependencies
+npm install -g node-gyp
+sudo apt install -y build-essential python3
+npm rebuild better-sqlite3
+```
+
+**Database permission errors:**
+```bash
+# Ensure data directory exists and is writable
+mkdir -p data
+chmod 755 data
+```
+
+**AI requests timeout:**
+- Increase server timeout settings (nginx: `proxy_read_timeout`, Vercel: function duration)
+- AI operations can take 30-60 seconds for complex analyses
+
+**Memory issues:**
+- Minimum recommended: 1GB RAM
+- For heavy usage: 2GB+ RAM
+- Monitor with `pm2 monit` or your hosting dashboard
 
 ## Design
 
