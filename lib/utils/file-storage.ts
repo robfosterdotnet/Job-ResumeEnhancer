@@ -108,6 +108,7 @@ export async function saveExport(
  * This function is kept for backward compatibility but returns an empty string.
  */
 export function getPublicUrl(_filePath: string): string {
+  void _filePath
   console.warn(
     "getPublicUrl is deprecated. Files are now served through authenticated API routes."
   )

@@ -2,6 +2,8 @@
 
 A personal job search tool that analyzes your resume against job postings and deeply researches companies before applying. Built with Next.js, Azure OpenAI, and Anthropic-inspired design.
 
+[![CI](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml/badge.svg)](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml)
+
 ## Features
 
 ### Resume Analysis
@@ -250,6 +252,12 @@ npm run build
 npm run db:push      # Push schema changes
 npm run db:studio    # Open Drizzle Studio
 ```
+
+## CI/CD
+
+- CI runs `lint`, `test`, and `build` on every PR and push to `main` via GitHub Actions.
+- Optional CD workflow supports deploying to Vercel via `workflow_dispatch` and repository secrets.
+- Docs: `.local/ci-cd.md`
 
 ## API Endpoints
 

@@ -1,0 +1,58 @@
+name: Deploy (Vercel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Vercel environment"
+        type: choice
+        required: true
+        default: production
+        options:
+          - production
+          - preview
+      ref:
+        description: "Branch, tag, or SHA to deploy"
+        type: string
+        required: false
+
+concurrency:
+  group: deploy-vercel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Pull Vercel config
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel@latest pull --yes --environment=${{ inputs.environment }} --token=$VERCEL_TOKEN
+
+      - name: Build (Vercel)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel@latest build ${{ inputs.environment == 'production' && '--prod' || '' }} --token=$VERCEL_TOKEN
+
+      - name: Deploy (Vercel)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel@latest deploy --prebuilt ${{ inputs.environment == 'production' && '--prod' || '' }} --token=$VERCEL_TOKEN
