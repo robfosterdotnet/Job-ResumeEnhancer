@@ -25,8 +25,13 @@ if (!fs.existsSync(dataDir)) {
 
 const dbPath = process.env.DATABASE_URL?.replace("file:", "") || path.join(dataDir, "resume-enhancer.db")
 
-const sqlite = new Database(dbPath)
-sqlite.pragma("journal_mode = WAL")
+const sqlite = new Database(dbPath, { timeout: 30000 })
+try {
+  sqlite.pragma("journal_mode = WAL")
+} catch (error) {
+  const code = (error as { code?: string } | null)?.code
+  if (code !== "SQLITE_BUSY") throw error
+}
 
 export const db = drizzle(sqlite, { schema })
 
