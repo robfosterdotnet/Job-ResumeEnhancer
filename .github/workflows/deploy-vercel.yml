@@ -9,9 +9,27 @@ on:
         default: production
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Check deploy configuration
+        id: check
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ] && [ -n "${{ secrets.VERCEL_ORG_ID }}" ] && [ -n "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Vercel deploy is configured."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Vercel deploy is not configured (missing secrets)."
+          fi
+
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: check
+    if: ${{ needs.check.outputs.configured == 'true' }}
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -19,13 +37,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Check deploy configuration
-        run: |
-          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "Skipping deploy: missing required secrets (VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID)."
-            exit 0
-          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
