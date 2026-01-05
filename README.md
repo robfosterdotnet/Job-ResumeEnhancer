@@ -255,9 +255,35 @@ npm run db:studio    # Open Drizzle Studio
 
 ## CI/CD
 
-- CI runs `lint`, `test`, and `build` on every PR and push to `main` via GitHub Actions.
-- Optional CD workflow supports deploying to Vercel via `workflow_dispatch` and repository secrets.
-- Docs: `.local/ci-cd.md`
+This repo uses GitHub Actions for CI, plus an optional (manual) Vercel deploy workflow.
+
+### CI (GitHub Actions)
+
+Workflow: `.github/workflows/ci.yml`
+
+Runs on:
+- `pull_request`
+- `push` to `main`
+
+What it runs:
+- `npm ci`
+- `npm run lint`
+- `npm test` (Vitest)
+- `npm run build`
+
+Test tracking:
+- CI uploads a `test-results` artifact containing `test-results/vitest.xml` (JUnit) for each run.
+
+Build note:
+- `npm run build` uses `next build --webpack` for better reliability in locked-down CI environments.
+
+### CD (Vercel, optional)
+
+Workflow: `.github/workflows/deploy-vercel.yml`
+
+- Triggered manually via `workflow_dispatch` (Actions tab → “Deploy (Vercel)”).
+- Requires GitHub Actions secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+- If secrets are not set (e.g., in forks), the workflow exits successfully after printing a “Skipping deploy” message.
 
 ## API Endpoints
 
