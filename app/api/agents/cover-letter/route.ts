@@ -12,6 +12,8 @@ import { logActivity } from "@/lib/activity/logger"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+// Increase timeout for AI cover letter generation (5 minutes)
+export const maxDuration = 300
 
 const generateSchema = z.object({
   jobApplicationId: z.coerce.number().int().positive(),

@@ -18,17 +18,43 @@ interface ResumeUploaderProps {
   onSuccess?: () => void
 }
 
+const ACCEPTED_FILE_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/msword",
+  "text/plain",
+]
+const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"]
+
 export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUploaderProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [pastedText, setPastedText] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dragCounterRef = useRef(0)
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const validateFile = (file: File): string | null => {
+    // Check file type
+    const extension = "." + file.name.split(".").pop()?.toLowerCase()
+    if (!ACCEPTED_FILE_TYPES.includes(file.type) && !ACCEPTED_EXTENSIONS.includes(extension)) {
+      return `Invalid file type. Please upload a Word document (.docx), PDF, or text file.`
+    }
+    // Check file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      return `File too large. Maximum size is 10MB.`
+    }
+    return null
+  }
+
+  const uploadFile = async (file: File) => {
+    const validationError = validateFile(file)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
 
     setLoading(true)
     setError("")
@@ -63,6 +89,47 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadFile(file)
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current++
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current--
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    dragCounterRef.current = 0
+
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      await uploadFile(files[0])
     }
   }
 
@@ -144,8 +211,16 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
 
           <TabsContent value="upload" className="mt-4">
             <div
-              className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragging
+                  ? "border-primary bg-primary/5"
+                  : "hover:border-primary"
+              }`}
               onClick={() => fileInputRef.current?.click()}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             >
               <input
                 ref={fileInputRef}
@@ -158,6 +233,11 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <p>Uploading...</p>
+                </div>
+              ) : isDragging ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-8 w-8 text-primary" />
+                  <p className="font-medium text-primary">Drop your file here</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">

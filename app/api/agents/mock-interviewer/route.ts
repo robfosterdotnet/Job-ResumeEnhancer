@@ -20,6 +20,8 @@ import { requireAuth } from "@/lib/auth/middleware"
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+// Increase timeout for AI interview evaluation (5 minutes)
+export const maxDuration = 300
 
 type ActionType = "start" | "answer" | "skip" | "end"
 

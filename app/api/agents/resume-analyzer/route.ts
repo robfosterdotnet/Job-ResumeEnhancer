@@ -9,6 +9,9 @@ import { logActivity, updateAggregatedSkillGaps } from "@/lib/activity/logger"
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+// Increase timeout for long-running AI analysis (5 minutes)
+// Vercel Pro: up to 300s, Hobby: 10s max (will timeout on hobby plan)
+export const maxDuration = 300
 
 // POST /api/agents/resume-analyzer - Run resume analysis
 export async function POST(request: NextRequest) {

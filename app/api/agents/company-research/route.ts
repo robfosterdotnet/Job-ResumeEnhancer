@@ -16,6 +16,8 @@ import { logActivity } from "@/lib/activity/logger"
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+// Increase timeout for long-running AI research (5 minutes)
+export const maxDuration = 300
 
 // POST /api/agents/company-research - Run company research
 export async function POST(request: NextRequest) {
