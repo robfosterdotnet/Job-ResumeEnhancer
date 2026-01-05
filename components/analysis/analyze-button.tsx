@@ -39,11 +39,16 @@ export function AnalyzeButton({ jobId, hasResume, hasAnalysis }: AnalyzeButtonPr
     setDialogOpen(true)
     completedRef.current = false
 
+    // Use AbortController with a 5-minute timeout for long analysis operations
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000)
+
     try {
       const response = await fetch("/api/agents/resume-analyzer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobApplicationId: jobId }),
+        signal: controller.signal,
       })
 
       if (!response.ok) {
@@ -77,7 +82,13 @@ export function AnalyzeButton({ jobId, hasResume, hasAnalysis }: AnalyzeButtonPr
       }
     } catch (err) {
       setStatus("error")
-      setError(err instanceof Error ? err.message : "Analysis failed")
+      if (err instanceof Error && err.name === "AbortError") {
+        setError("Analysis timed out. Please try again.")
+      } else {
+        setError(err instanceof Error ? err.message : "Analysis failed")
+      }
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 

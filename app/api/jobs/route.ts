@@ -5,6 +5,7 @@ import { jobApplications, companies } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
 import { parseRequestBody } from "@/lib/utils/api-validation"
 import { requireAuth } from "@/lib/auth/middleware"
+import { logActivity } from "@/lib/activity/logger"
 
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
@@ -114,6 +115,15 @@ export async function POST(request: NextRequest) {
         company: true,
         resume: true,
       },
+    })
+
+    // Log activity
+    await logActivity({
+      jobApplicationId: job.id,
+      activityType: "job_created",
+      title: `Added "${title}" at ${companyName || "Unknown Company"}`,
+      description: `New job application created`,
+      metadata: { companyId, title },
     })
 
     return NextResponse.json({ job: fullJob }, { status: 201 })

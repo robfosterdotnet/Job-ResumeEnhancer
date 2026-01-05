@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, FileText, Loader2, CheckCircle } from "lucide-react"
+import { Upload, FileText, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 interface ResumeUploaderProps {
   jobId: number
@@ -18,8 +19,10 @@ interface ResumeUploaderProps {
 }
 
 export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUploaderProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const [pastedText, setPastedText] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -29,6 +32,7 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
 
     setLoading(true)
     setError("")
+    setSuccess("")
 
     try {
       const formData = new FormData()
@@ -45,11 +49,20 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
         throw new Error(data.error || "Failed to upload resume")
       }
 
+      setSuccess(`Successfully uploaded ${file.name}`)
       onSuccess?.()
+      // Auto-refresh the page after a short delay to show success
+      setTimeout(() => {
+        router.refresh()
+      }, 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload resume")
     } finally {
       setLoading(false)
+      // Reset the file input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
@@ -61,6 +74,7 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
 
     setLoading(true)
     setError("")
+    setSuccess("")
 
     try {
       const response = await fetch(`/api/jobs/${jobId}/resume`, {
@@ -75,7 +89,12 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
         throw new Error(data.error || "Failed to save resume")
       }
 
+      setSuccess("Resume saved successfully!")
       onSuccess?.()
+      // Auto-refresh the page after a short delay to show success
+      setTimeout(() => {
+        router.refresh()
+      }, 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save resume")
     } finally {
@@ -98,8 +117,16 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
       </CardHeader>
       <CardContent>
         {error && (
-          <div className="mb-4 p-4 rounded-md bg-destructive/10 text-destructive text-sm">
+          <div className="mb-4 p-4 rounded-md bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-4 rounded-md bg-success/10 text-success text-sm flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            {success}
           </div>
         )}
 
@@ -136,7 +163,7 @@ export function ResumeUploader({ jobId, currentResume, onSuccess }: ResumeUpload
                 <div className="flex flex-col items-center gap-2">
                   <Upload className="h-8 w-8 text-muted-foreground" />
                   <p className="font-medium">Click to upload or drag and drop</p>
-                  <p className="text-sm text-muted-foreground">PDF, DOCX, or TXT (max 10MB)</p>
+                  <p className="text-sm text-muted-foreground">Word (.docx), PDF, or TXT (max 10MB)</p>
                 </div>
               )}
             </div>

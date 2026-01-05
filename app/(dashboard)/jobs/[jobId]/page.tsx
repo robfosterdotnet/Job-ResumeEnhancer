@@ -21,6 +21,7 @@ import {
 import { formatDistanceToNow } from "date-fns"
 import { ResumeUploader } from "@/components/jobs/resume-uploader"
 import { ExportButton } from "@/components/jobs/export-button"
+import { DeleteJobButton } from "@/components/jobs/delete-job-button"
 
 type PageProps = { params: Promise<{ jobId: string }> }
 
@@ -111,6 +112,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                 </Button>
               </a>
             )}
+            <DeleteJobButton jobId={job.id} jobTitle={job.title} />
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import {
 import { eq } from "drizzle-orm"
 import { runCompanyResearch } from "@/lib/ai/agents/company-researcher"
 import { requireAuth } from "@/lib/auth/middleware"
+import { logActivity } from "@/lib/activity/logger"
 
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
@@ -148,6 +149,24 @@ export async function POST(request: NextRequest) {
                 status: issue.status as typeof legalIssues.$inferInsert.status,
               }))
             )
+          }
+
+          // Log activity
+          if (jobApplicationId) {
+            const ethicsScore = research.ethicsAlignment?.score
+            await logActivity({
+              jobApplicationId,
+              activityType: "research_completed",
+              title: `Company research completed for ${resolvedCompanyName}`,
+              description: ethicsScore !== null ? `Ethics Score: ${ethicsScore}/10 • ${research.recentNews.length} news items` : `${research.recentNews.length} news items found`,
+              metadata: {
+                researchId: savedResearch.id,
+                companyId: company!.id,
+                ethicsScore,
+                newsCount: research.recentNews.length,
+                legalIssuesCount: research.legalIssues?.length || 0,
+              },
+            })
           }
 
           controller.enqueue(

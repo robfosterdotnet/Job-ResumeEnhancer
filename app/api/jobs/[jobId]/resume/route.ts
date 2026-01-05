@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { parseDocument, detectFileType } from "@/lib/parsers"
 import { saveUploadedFile } from "@/lib/utils/file-storage"
 import { requireAuth } from "@/lib/auth/middleware"
+import { logActivity } from "@/lib/activity/logger"
 
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
@@ -97,6 +98,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         updatedAt: new Date(),
       })
       .where(eq(jobApplications.id, id))
+
+    // Log activity
+    await logActivity({
+      jobApplicationId: id,
+      activityType: "resume_uploaded",
+      title: `Resume uploaded for "${job.title}"`,
+      description: filename ? `File: ${filename}` : "Text pasted",
+      metadata: { resumeId: resume.id, filename, fileType },
+    })
 
     return NextResponse.json({
       resume: {

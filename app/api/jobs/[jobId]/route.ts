@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { jobApplications, companies } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { requireAuth } from "@/lib/auth/middleware"
+import { logActivity } from "@/lib/activity/logger"
 
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
@@ -68,8 +69,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 })
     }
 
+    // Get current job state for tracking changes
+    const currentJob = await db.query.jobApplications.findFirst({
+      where: eq(jobApplications.id, id),
+      with: { company: true },
+    })
+
+    if (!currentJob) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 })
+    }
+
     const body = await request.json()
-    const { title, companyName, jobDescriptionText, jobDescriptionUrl, status, notes, appliedAt } = body
+    const { title, companyName, jobDescriptionText, jobDescriptionUrl, status, notes, appliedAt, interviewDate, followUpDate, pipelineOrder } = body
 
     // Handle company update
     let companyId: number | undefined
@@ -101,6 +112,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (status !== undefined) updateData.status = status
     if (notes !== undefined) updateData.notes = notes
     if (appliedAt !== undefined) updateData.appliedAt = appliedAt ? new Date(appliedAt) : null
+    if (interviewDate !== undefined) updateData.interviewDate = interviewDate ? new Date(interviewDate) : null
+    if (followUpDate !== undefined) updateData.followUpDate = followUpDate ? new Date(followUpDate) : null
+    if (pipelineOrder !== undefined) updateData.pipelineOrder = pipelineOrder
 
     await db
       .update(jobApplications)
@@ -114,6 +128,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         resume: true,
       },
     })
+
+    // Log status change activity
+    if (status !== undefined && status !== currentJob.status) {
+      await logActivity({
+        jobApplicationId: id,
+        activityType: "status_changed",
+        title: `Updated "${currentJob.title}" status to ${status}`,
+        description: `Status changed from ${currentJob.status} to ${status}`,
+        metadata: { oldStatus: currentJob.status, newStatus: status },
+      })
+    }
+
+    // Log interview scheduling
+    if (interviewDate !== undefined && interviewDate !== null) {
+      await logActivity({
+        jobApplicationId: id,
+        activityType: "interview_scheduled",
+        title: `Interview scheduled for "${currentJob.title}"`,
+        description: `Interview date set to ${new Date(interviewDate).toLocaleDateString()}`,
+        metadata: { interviewDate },
+      })
+    }
 
     return NextResponse.json({ job: updatedJob })
   } catch (error) {

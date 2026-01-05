@@ -8,6 +8,7 @@ import { safeJsonParse } from "@/lib/utils/safe-json"
 import { parseRequestBody } from "@/lib/utils/api-validation"
 import { requireAuth } from "@/lib/auth/middleware"
 import { logger } from "@/lib/utils/logger"
+import { logActivity } from "@/lib/activity/logger"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -122,6 +123,21 @@ export async function POST(request: NextRequest) {
             tone,
             length,
             version: nextVersion,
+          })
+
+          // Log activity
+          await logActivity({
+            jobApplicationId,
+            activityType: "cover_letter_generated",
+            title: `Cover letter created for "${job.title}"`,
+            description: `Tone: ${tone} • Version ${nextVersion}`,
+            metadata: {
+              coverLetterId: savedLetter.id,
+              tone,
+              length,
+              version: nextVersion,
+              usedAnalysisInsights: useAnalysisInsights,
+            },
           })
 
           controller.enqueue(

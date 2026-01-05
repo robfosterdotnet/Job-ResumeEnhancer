@@ -43,6 +43,9 @@ export const jobApplications = sqliteTable("job_applications", {
   >().default("saved"),
   notes: text("notes"),
   appliedAt: integer("applied_at", { mode: "timestamp" }),
+  interviewDate: integer("interview_date", { mode: "timestamp" }),
+  followUpDate: integer("follow_up_date", { mode: "timestamp" }),
+  pipelineOrder: integer("pipeline_order").default(0),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
@@ -323,6 +326,34 @@ export const coverLetters = sqliteTable("cover_letters", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// ============ DASHBOARD TABLES ============
+
+export const activityLogs = sqliteTable("activity_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  jobApplicationId: integer("job_application_id")
+    .references(() => jobApplications.id),
+  activityType: text("activity_type").$type<
+    "job_created" | "resume_uploaded" | "analysis_completed" |
+    "research_completed" | "status_changed" | "cover_letter_generated" |
+    "interview_scheduled" | "interview_completed"
+  >().notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  metadata: text("metadata"), // JSON for extra context
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
+export const aggregatedSkillGaps = sqliteTable("aggregated_skill_gaps", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  skill: text("skill").notNull().unique(),
+  occurrenceCount: integer("occurrence_count").default(1),
+  jobIdsJson: text("job_ids_json"), // JSON array of job IDs that mention this skill
+  isLearned: integer("is_learned", { mode: "boolean" }).default(false),
+  learnedAt: integer("learned_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============ RELATIONS ============
 
 export const resumesRelations = relations(resumes, ({ many }) => ({
@@ -348,6 +379,7 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one, many 
   mockInterviewSessions: many(mockInterviewSessions),
   mockInterviewMetrics: one(mockInterviewMetrics),
   coverLetters: many(coverLetters),
+  activityLogs: many(activityLogs),
 }))
 
 export const resumeAnalysesRelations = relations(resumeAnalyses, ({ one, many }) => ({
@@ -471,6 +503,14 @@ export const mockInterviewMetricsRelations = relations(mockInterviewMetrics, ({ 
 export const coverLettersRelations = relations(coverLetters, ({ one }) => ({
   jobApplication: one(jobApplications, {
     fields: [coverLetters.jobApplicationId],
+    references: [jobApplications.id],
+  }),
+}))
+
+// Dashboard Relations
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  jobApplication: one(jobApplications, {
+    fields: [activityLogs.jobApplicationId],
     references: [jobApplications.id],
   }),
 }))

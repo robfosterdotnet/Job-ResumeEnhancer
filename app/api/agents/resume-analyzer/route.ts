@@ -4,6 +4,7 @@ import { jobApplications, resumeAnalyses, interviewQuestions } from "@/lib/db/sc
 import { eq } from "drizzle-orm"
 import { runResumeAnalysis } from "@/lib/ai/agents/resume-analyzer"
 import { requireAuth } from "@/lib/auth/middleware"
+import { logActivity, updateAggregatedSkillGaps } from "@/lib/activity/logger"
 
 // SQLite requires Node.js runtime
 export const runtime = "nodejs"
@@ -103,6 +104,24 @@ export async function POST(request: NextRequest) {
             .update(jobApplications)
             .set({ status: "analyzed", updatedAt: new Date() })
             .where(eq(jobApplications.id, jobApplicationId))
+
+          // Log activity
+          await logActivity({
+            jobApplicationId,
+            activityType: "analysis_completed",
+            title: `Resume analysis completed for "${job.title}"`,
+            description: `Fit Score: ${analysis.fitScore}% • ${analysis.interviewQuestions.length} interview questions generated`,
+            metadata: {
+              analysisId: savedAnalysis.id,
+              fitScore: analysis.fitScore,
+              questionCount: analysis.interviewQuestions.length,
+            },
+          })
+
+          // Update aggregated skill gaps
+          if (analysis.skillGaps && analysis.skillGaps.length > 0) {
+            await updateAggregatedSkillGaps(jobApplicationId, analysis.skillGaps)
+          }
 
           controller.enqueue(
             encoder.encode(
