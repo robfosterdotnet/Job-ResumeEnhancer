@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Lightbulb, ChevronDown, ChevronUp, Copy, Check } from "lucide-react"
+import { Lightbulb, ChevronDown, ChevronUp, Copy, Check, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { copyToClipboard } from "@/lib/utils/clipboard"
 
 interface Enhancement {
   section: string
@@ -20,11 +21,18 @@ interface EnhancementSuggestionsProps {
 export function EnhancementSuggestions({ enhancements }: EnhancementSuggestionsProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+  const [copyError, setCopyError] = useState<number | null>(null)
 
   const handleCopy = async (text: string, index: number) => {
-    await navigator.clipboard.writeText(text)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
+    const success = await copyToClipboard(text)
+    if (success) {
+      setCopiedIndex(index)
+      setCopyError(null)
+      setTimeout(() => setCopiedIndex(null), 2000)
+    } else {
+      setCopyError(index)
+      setTimeout(() => setCopyError(null), 2000)
+    }
   }
 
   return (
@@ -91,8 +99,13 @@ export function EnhancementSuggestions({ enhancements }: EnhancementSuggestionsP
                       >
                         {copiedIndex === index ? (
                           <>
-                            <Check className="mr-1 h-3 w-3" />
+                            <Check className="mr-1 h-3 w-3 text-green-500" />
                             Copied
+                          </>
+                        ) : copyError === index ? (
+                          <>
+                            <AlertCircle className="mr-1 h-3 w-3 text-destructive" />
+                            Failed
                           </>
                         ) : (
                           <>

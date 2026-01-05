@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Copy, Download, Trash2, Check } from "lucide-react"
+import { Calendar, Copy, Download, Trash2, Check, AlertCircle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { CoverLetterViewer } from "./cover-letter-viewer"
+import { copyToClipboard } from "@/lib/utils/clipboard"
 
 interface CoverLetter {
   id: number
@@ -32,6 +33,7 @@ export function CoverLetterList({ initialLetters }: CoverLetterListProps) {
     initialLetters[0]?.id || null
   )
   const [copiedId, setCopiedId] = useState<number | null>(null)
+  const [copyErrorId, setCopyErrorId] = useState<number | null>(null)
 
   const selectedLetter = letters.find((l) => l.id === selectedId)
 
@@ -39,9 +41,15 @@ export function CoverLetterList({ initialLetters }: CoverLetterListProps) {
     const content = letter.isEdited && letter.editedContent
       ? letter.editedContent
       : letter.fullContent
-    await navigator.clipboard.writeText(content)
-    setCopiedId(letter.id)
-    setTimeout(() => setCopiedId(null), 2000)
+    const success = await copyToClipboard(content)
+    if (success) {
+      setCopiedId(letter.id)
+      setCopyErrorId(null)
+      setTimeout(() => setCopiedId(null), 2000)
+    } else {
+      setCopyErrorId(letter.id)
+      setTimeout(() => setCopyErrorId(null), 2000)
+    }
   }
 
   const handleDownload = (letter: CoverLetter) => {
@@ -166,6 +174,8 @@ export function CoverLetterList({ initialLetters }: CoverLetterListProps) {
                   >
                     {copiedId === letter.id ? (
                       <Check className="h-3.5 w-3.5 text-green-500" />
+                    ) : copyErrorId === letter.id ? (
+                      <AlertCircle className="h-3.5 w-3.5 text-destructive" />
                     ) : (
                       <Copy className="h-3.5 w-3.5" />
                     )}

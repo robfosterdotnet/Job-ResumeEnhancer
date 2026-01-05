@@ -1,3 +1,5 @@
+"use client"
+
 import { MetricCard } from "./metric-card"
 import {
   Briefcase,
