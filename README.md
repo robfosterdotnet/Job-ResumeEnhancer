@@ -40,6 +40,16 @@ A personal job search tool that analyzes your resume against job postings and de
 - Session summaries with practice recommendations
 - Voice input/output support (Web Speech API)
 
+### Cover Letter Generation
+- Generate tailored cover letters based on your resume and job description
+- Multiple tone options: formal, conversational, or enthusiastic
+- Length options: short, medium, or long
+- Optional integration with resume analysis insights
+- Save multiple versions for comparison
+- Inline editing with revert capability
+- Copy to clipboard or download as text
+- Included in job exports
+
 ### Application Tracking
 - Manage multiple job applications in one dashboard
 - Track status: Saved → Analyzing → Applied → Interviewing → Offered
@@ -172,6 +182,19 @@ At the end of your session, get a comprehensive summary with overall score, stre
 
 ![Mock Interview Summary](docs/screenshots/11-mock-interview-summary.png)
 
+### 6. Generate Cover Letters
+
+Click "Cover Letter" to generate tailored cover letters for your application.
+
+![Cover Letter Generation](docs/screenshots/cover-letter-feature.png)
+
+Configure your cover letter with:
+- **Tone**: Formal, conversational, or enthusiastic
+- **Length**: Short (2-3 paragraphs), medium (3-4), or long (4-5)
+- **Use Analysis Insights**: Optionally incorporate strengths from your resume analysis
+
+Generate multiple versions, edit inline, copy to clipboard, or download as text. All cover letters are saved and included in job exports.
+
 ## Quick Start Usage
 
 1. **Create a Job Application** - Click "New Job Application" and enter the job details
@@ -184,9 +207,11 @@ At the end of your session, get a comprehensive summary with overall score, stre
 
 5. **Practice Interviews** - Click "Mock Interview" to practice with AI feedback
 
-6. **Chat with Your Data** - Use the chat interface for follow-up questions
+6. **Generate Cover Letters** - Click "Cover Letter" to create tailored cover letters
 
-7. **Export Reports** - Download your analysis and research as JSON or Markdown files
+7. **Chat with Your Data** - Use the chat interface for follow-up questions
+
+8. **Export Reports** - Download your analysis, research, and cover letters as JSON or Markdown
 
 ## Project Structure
 
@@ -201,6 +226,7 @@ Job-ResumeEnhancer/
 │   │   │   └── [jobId]/      # Job detail & sub-pages
 │   │   │       ├── resume-analysis/
 │   │   │       ├── company-research/
+│   │   │       ├── cover-letter/
 │   │   │       ├── chat/
 │   │   │       └── mock-interview/
 │   │   └── layout.tsx        # Dashboard layout with sidebar
@@ -215,6 +241,7 @@ Job-ResumeEnhancer/
 │   ├── ui/                   # Base UI components
 │   ├── analysis/             # Resume analysis views
 │   ├── research/             # Company research views
+│   ├── cover-letter/         # Cover letter generation
 │   ├── chat/                 # Chat interface
 │   ├── mock-interview/       # Mock interview components
 │   ├── dashboard/            # Layout components
@@ -295,6 +322,9 @@ Workflow: `.github/workflows/deploy-vercel.yml`
 | POST | `/api/agents/resume-analyzer` | Run resume analysis (streaming) |
 | POST | `/api/agents/company-research` | Run company research (streaming) |
 | POST | `/api/agents/mock-interviewer` | Mock interview agent (streaming) |
+| POST | `/api/agents/cover-letter` | Generate cover letter (streaming) |
+| GET/POST | `/api/jobs/[jobId]/cover-letters` | List/create cover letters |
+| GET/PATCH/DELETE | `/api/jobs/[jobId]/cover-letters/[letterId]` | Cover letter operations |
 | GET/POST | `/api/mock-interview/sessions` | List/create interview sessions |
 | GET/PATCH/DELETE | `/api/mock-interview/sessions/[sessionId]` | Session operations |
 | GET | `/api/mock-interview/analytics` | Performance metrics |
