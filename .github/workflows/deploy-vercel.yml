@@ -4,16 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Vercel environment"
-        type: choice
+        description: "Vercel environment (production|preview)"
         required: true
         default: production
-        options:
-          - production
-          - preview
       ref:
         description: "Branch, tag, or SHA to deploy"
-        type: string
         required: false
 
 concurrency:
