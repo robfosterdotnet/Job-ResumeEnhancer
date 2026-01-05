@@ -83,8 +83,9 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Dark mode via system preference (when theme is "system") */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #1A1A2E;
     --foreground: #FAFAFA;
     --muted: #2A2A3E;
@@ -100,6 +101,95 @@
     --accent: #3D2A28;
     --accent-foreground: #FF8A65;
   }
+}
+
+/* Manual dark mode class - use :root.dark for proper specificity */
+:root.dark {
+  --background: #1A1A2E;
+  --foreground: #FAFAFA;
+  --muted: #2A2A3E;
+  --muted-foreground: #9CA3AF;
+  --border: #374151;
+  --input: #374151;
+  --card: #2A2A3E;
+  --card-foreground: #FAFAFA;
+  --popover: #2A2A3E;
+  --popover-foreground: #FAFAFA;
+  --secondary: #2A2A3E;
+  --secondary-foreground: #FAFAFA;
+  --accent: #3D2A28;
+  --accent-foreground: #FF8A65;
+}
+
+/* Accent color variations */
+[data-accent="blue"] {
+  --primary: #3B82F6;
+  --primary-light: #60A5FA;
+  --primary-dark: #2563EB;
+  --ring: #3B82F6;
+  --accent: #EFF6FF;
+  --accent-foreground: #2563EB;
+}
+:root.dark[data-accent="blue"] {
+  --accent: #1E3A5F;
+  --accent-foreground: #60A5FA;
+}
+
+[data-accent="green"] {
+  --primary: #10B981;
+  --primary-light: #34D399;
+  --primary-dark: #059669;
+  --ring: #10B981;
+  --accent: #ECFDF5;
+  --accent-foreground: #059669;
+}
+:root.dark[data-accent="green"] {
+  --accent: #1A3D30;
+  --accent-foreground: #34D399;
+}
+
+[data-accent="purple"] {
+  --primary: #8B5CF6;
+  --primary-light: #A78BFA;
+  --primary-dark: #7C3AED;
+  --ring: #8B5CF6;
+  --accent: #F5F3FF;
+  --accent-foreground: #7C3AED;
+}
+:root.dark[data-accent="purple"] {
+  --accent: #2D2150;
+  --accent-foreground: #A78BFA;
+}
+
+/* UI Density */
+[data-density="compact"] {
+  --spacing-scale: 0.85;
+}
+
+[data-density="comfortable"] {
+  --spacing-scale: 1;
+}
+
+/* Font Size */
+[data-font-size="small"] {
+  font-size: 14px;
+}
+
+[data-font-size="medium"] {
+  font-size: 16px;
+}
+
+[data-font-size="large"] {
+  font-size: 18px;
+}
+
+/* Disable animations */
+[data-animations="false"] *,
+[data-animations="false"] *::before,
+[data-animations="false"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 * {

@@ -326,6 +326,75 @@ export const coverLetters = sqliteTable("cover_letters", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// ============ USER SETTINGS TABLE ============
+
+export const userSettings = sqliteTable("user_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  // Profile
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  linkedinUrl: text("linkedin_url"),
+  portfolioUrl: text("portfolio_url"),
+
+  // Master Resume
+  masterResumeId: integer("master_resume_id").references(() => resumes.id),
+
+  // AI Preferences - Resume Analysis
+  analysisDepth: text("analysis_depth").$type<"quick" | "standard" | "comprehensive">().default("standard"),
+  analysisFocusAreasJson: text("analysis_focus_areas_json").default('["keywords","skills"]'),
+  interviewQuestionCount: integer("interview_question_count").default(15),
+
+  // AI Preferences - Cover Letter
+  coverLetterTone: text("cover_letter_tone").$type<"formal" | "conversational" | "enthusiastic">().default("conversational"),
+  coverLetterLength: text("cover_letter_length").$type<"short" | "medium" | "long">().default("medium"),
+  coverLetterUseAnalysis: integer("cover_letter_use_analysis", { mode: "boolean" }).default(true),
+
+  // AI Preferences - Company Research
+  researchDepth: text("research_depth").$type<"basic" | "standard" | "comprehensive">().default("standard"),
+  researchSectionsJson: text("research_sections_json").default('["leadership","financials","news","legal","ethics"]'),
+
+  // AI Preferences - Mock Interview
+  mockInterviewQuestionCount: integer("mock_interview_question_count").default(10),
+  mockInterviewDifficulty: text("mock_interview_difficulty").$type<"entry" | "mid" | "senior" | "executive">().default("mid"),
+  mockInterviewFeedbackMode: text("mock_interview_feedback_mode").$type<"immediate" | "summary">().default("immediate"),
+  mockInterviewVoiceEnabled: integer("mock_interview_voice_enabled", { mode: "boolean" }).default(true),
+
+  // AI Preferences - Chat
+  chatResponseStyle: text("chat_response_style").$type<"concise" | "balanced" | "detailed">().default("balanced"),
+  chatIncludeSources: integer("chat_include_sources", { mode: "boolean" }).default(true),
+
+  // Appearance
+  theme: text("theme").$type<"light" | "dark" | "system">().default("system"),
+  accentColor: text("accent_color").default("coral"),
+  uiDensity: text("ui_density").$type<"compact" | "comfortable">().default("comfortable"),
+  enableAnimations: integer("enable_animations", { mode: "boolean" }).default(true),
+  fontSize: text("font_size").$type<"small" | "medium" | "large">().default("medium"),
+
+  // Integrations
+  braveSearchApiKey: text("brave_search_api_key"),
+
+  // Notifications (future)
+  enableFollowUpReminders: integer("enable_follow_up_reminders", { mode: "boolean" }).default(true),
+  followUpReminderDays: integer("follow_up_reminder_days").default(7),
+  enableInterviewReminders: integer("enable_interview_reminders", { mode: "boolean" }).default(true),
+  interviewReminderHours: integer("interview_reminder_hours").default(24),
+
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
+export const masterResumeVersions = sqliteTable("master_resume_versions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  resumeId: integer("resume_id")
+    .references(() => resumes.id)
+    .notNull(),
+  versionNumber: integer("version_number").notNull(),
+  changeNote: text("change_note"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============ DASHBOARD TABLES ============
 
 export const activityLogs = sqliteTable("activity_logs", {
@@ -512,5 +581,20 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   jobApplication: one(jobApplications, {
     fields: [activityLogs.jobApplicationId],
     references: [jobApplications.id],
+  }),
+}))
+
+// Settings Relations
+export const userSettingsRelations = relations(userSettings, ({ one }) => ({
+  masterResume: one(resumes, {
+    fields: [userSettings.masterResumeId],
+    references: [resumes.id],
+  }),
+}))
+
+export const masterResumeVersionsRelations = relations(masterResumeVersions, ({ one }) => ({
+  resume: one(resumes, {
+    fields: [masterResumeVersions.resumeId],
+    references: [resumes.id],
   }),
 }))

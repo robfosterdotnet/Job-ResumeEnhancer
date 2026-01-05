@@ -41,7 +41,7 @@ const PIPELINE_STATUSES = [
   { id: "offered", color: "bg-green-400" },
 ] as const
 
-const VALID_STATUSES = new Set(PIPELINE_STATUSES.map(s => s.id))
+const VALID_STATUSES = new Set<string>(PIPELINE_STATUSES.map(s => s.id))
 
 const statusLabels: Record<string, string> = {
   saved: "Saved",
