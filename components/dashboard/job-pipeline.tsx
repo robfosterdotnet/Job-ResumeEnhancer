@@ -41,6 +41,8 @@ const PIPELINE_STATUSES = [
   { id: "offered", color: "bg-green-400" },
 ] as const
 
+const VALID_STATUSES = new Set(PIPELINE_STATUSES.map(s => s.id))
+
 const statusLabels: Record<string, string> = {
   saved: "Saved",
   analyzing: "Analyzing",
@@ -70,7 +72,7 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
     })
   )
 
-  // Group jobs by status
+  // Group jobs by status, with orphaned jobs going to "saved"
   const jobsByStatus = PIPELINE_STATUSES.reduce(
     (acc, status) => {
       acc[status.id] = jobs
@@ -80,6 +82,12 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
     },
     {} as Record<string, Job[]>
   )
+
+  // Add orphaned jobs (invalid status) to "saved" column
+  const orphanedJobs = jobs.filter((job) => !VALID_STATUSES.has(job.status))
+  if (orphanedJobs.length > 0) {
+    jobsByStatus["saved"] = [...jobsByStatus["saved"], ...orphanedJobs]
+  }
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event
@@ -95,7 +103,18 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
       if (!over) return
 
       const jobId = active.id as number
-      const newStatus = over.id as string
+      let newStatus = over.id as string
+
+      // If dropped on a card (numeric id), find which column that card is in
+      if (!VALID_STATUSES.has(newStatus)) {
+        const targetJob = jobs.find((j) => j.id === Number(over.id))
+        if (targetJob) {
+          newStatus = targetJob.status
+        } else {
+          // Invalid drop target, abort
+          return
+        }
+      }
 
       // Find the job being moved
       const job = jobs.find((j) => j.id === jobId)
