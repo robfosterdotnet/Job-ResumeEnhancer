@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useId } from "react"
 import {
   DndContext,
   DragEndEvent,
@@ -54,6 +54,7 @@ const statusLabels: Record<string, string> = {
 
 export function JobPipeline({ initialJobs }: JobPipelineProps) {
   const router = useRouter()
+  const dndId = useId() // Stable ID for DndContext to prevent hydration mismatch
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [activeJob, setActiveJob] = useState<Job | null>(null)
   const [activeTab, setActiveTab] = useState("saved")
@@ -184,6 +185,7 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
         {PIPELINE_STATUSES.map((status) => (
           <TabsContent key={status.id} value={status.id}>
             <DndContext
+              id={`${dndId}-mobile-${status.id}`}
               sensors={sensors}
               collisionDetection={closestCorners}
               onDragStart={handleDragStart}
@@ -207,6 +209,7 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
   const DesktopView = () => (
     <div className="hidden md:block overflow-x-auto pb-4">
       <DndContext
+        id={`${dndId}-desktop`}
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}

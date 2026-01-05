@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { jobApplications, companies } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import {
+  jobApplications,
+  companies,
+  resumes,
+  resumeAnalyses,
+  interviewQuestions,
+  companyResearch,
+  leadershipTeam,
+  companyNews,
+  legalIssues,
+  chatSessions,
+  chatMessages,
+  mockInterviewSessions,
+  mockInterviewResponses,
+  mockInterviewMetrics,
+  coverLetters,
+  activityLogs,
+} from "@/lib/db/schema"
+import { eq, inArray } from "drizzle-orm"
 import { requireAuth } from "@/lib/auth/middleware"
 import { logActivity } from "@/lib/activity/logger"
 
@@ -161,7 +178,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE /api/jobs/[jobId] - Delete a job application
+// DELETE /api/jobs/[jobId] - Delete a job application and all related data
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const authError = requireAuth(request)
   if (authError) return authError
@@ -174,7 +191,89 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 })
     }
 
+    // Get the job to find associated resume ID
+    const job = await db.query.jobApplications.findFirst({
+      where: eq(jobApplications.id, id),
+    })
+
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 })
+    }
+
+    // Delete in correct order to respect foreign key constraints
+
+    // 1. Delete chat messages (child of chat sessions)
+    const sessions = await db.query.chatSessions.findMany({
+      where: eq(chatSessions.jobApplicationId, id),
+    })
+    if (sessions.length > 0) {
+      const sessionIds = sessions.map(s => s.id)
+      await db.delete(chatMessages).where(inArray(chatMessages.sessionId, sessionIds))
+    }
+
+    // 2. Delete chat sessions
+    await db.delete(chatSessions).where(eq(chatSessions.jobApplicationId, id))
+
+    // 3. Delete mock interview responses (child of mock interview sessions)
+    const mockSessions = await db.query.mockInterviewSessions.findMany({
+      where: eq(mockInterviewSessions.jobApplicationId, id),
+    })
+    if (mockSessions.length > 0) {
+      const mockSessionIds = mockSessions.map(s => s.id)
+      await db.delete(mockInterviewResponses).where(inArray(mockInterviewResponses.sessionId, mockSessionIds))
+    }
+
+    // 4. Delete mock interview sessions
+    await db.delete(mockInterviewSessions).where(eq(mockInterviewSessions.jobApplicationId, id))
+
+    // 5. Delete mock interview metrics
+    await db.delete(mockInterviewMetrics).where(eq(mockInterviewMetrics.jobApplicationId, id))
+
+    // 6. Delete interview questions (child of resume analyses)
+    const analyses = await db.query.resumeAnalyses.findMany({
+      where: eq(resumeAnalyses.jobApplicationId, id),
+    })
+    if (analyses.length > 0) {
+      const analysisIds = analyses.map(a => a.id)
+      await db.delete(interviewQuestions).where(inArray(interviewQuestions.resumeAnalysisId, analysisIds))
+    }
+
+    // 7. Delete resume analyses
+    await db.delete(resumeAnalyses).where(eq(resumeAnalyses.jobApplicationId, id))
+
+    // 8. Delete company research related data (leadership, news, legal issues)
+    const research = await db.query.companyResearch.findMany({
+      where: eq(companyResearch.jobApplicationId, id),
+    })
+    if (research.length > 0) {
+      const researchIds = research.map(r => r.id)
+      await db.delete(leadershipTeam).where(inArray(leadershipTeam.companyResearchId, researchIds))
+      await db.delete(companyNews).where(inArray(companyNews.companyResearchId, researchIds))
+      await db.delete(legalIssues).where(inArray(legalIssues.companyResearchId, researchIds))
+    }
+
+    // 9. Delete company research
+    await db.delete(companyResearch).where(eq(companyResearch.jobApplicationId, id))
+
+    // 10. Delete cover letters
+    await db.delete(coverLetters).where(eq(coverLetters.jobApplicationId, id))
+
+    // 11. Delete activity logs
+    await db.delete(activityLogs).where(eq(activityLogs.jobApplicationId, id))
+
+    // 12. Delete the job application itself
     await db.delete(jobApplications).where(eq(jobApplications.id, id))
+
+    // 13. Delete the associated resume if it exists and is not shared
+    if (job.resumeId) {
+      // Check if any other job uses this resume
+      const otherJobs = await db.query.jobApplications.findFirst({
+        where: eq(jobApplications.resumeId, job.resumeId),
+      })
+      if (!otherJobs) {
+        await db.delete(resumes).where(eq(resumes.id, job.resumeId))
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
