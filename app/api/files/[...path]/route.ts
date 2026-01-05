@@ -99,7 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const filename = path.basename(filePath)
 
     // Return file with appropriate headers
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": mimeType,
         "Content-Disposition": `attachment; filename="${filename}"`,

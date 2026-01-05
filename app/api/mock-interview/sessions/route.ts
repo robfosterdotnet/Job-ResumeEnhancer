@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         jobApplicationId,
         resumeAnalysisId,
         feedbackMode,
-        questionCount: Math.min(questionCount, availableQuestionCount || questionCount),
+        questionCount: Math.min(questionCount ?? 10, availableQuestionCount || (questionCount ?? 10)),
         selectedCategoriesJson: selectedCategories ? JSON.stringify(selectedCategories) : null,
         difficulty,
         voiceEnabled,

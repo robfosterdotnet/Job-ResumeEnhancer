@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { jobApplications, resumeAnalyses, companyResearch } from "@/lib/db/schema"
+import { jobApplications, resumeAnalyses, companyResearch, coverLetters } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { safeJsonParse } from "@/lib/utils/safe-json"
 import { requireAuth } from "@/lib/auth/middleware"
@@ -61,6 +61,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Get latest cover letter
+    const coverLetter = await db.query.coverLetters.findFirst({
+      where: eq(coverLetters.jobApplicationId, jobApplicationId),
+      orderBy: [desc(coverLetters.createdAt)],
+    })
+
     // Build report data using safe JSON parsing
     const report = {
       generatedAt: new Date().toISOString(),
@@ -95,6 +101,17 @@ export async function POST(request: NextRequest) {
             legalIssues: research.legalIssues,
           }
         : null,
+      coverLetter: coverLetter
+        ? {
+            content: coverLetter.isEdited && coverLetter.editedContent
+              ? coverLetter.editedContent
+              : coverLetter.fullContent,
+            tone: coverLetter.tone,
+            length: coverLetter.length,
+            version: coverLetter.versionNumber,
+            isEdited: coverLetter.isEdited,
+          }
+        : null,
     }
 
     if (format === "json") {
@@ -126,6 +143,7 @@ function generateMarkdownReport(report: Record<string, unknown>): string {
   const job = report.jobApplication as Record<string, unknown>
   const analysis = report.resumeAnalysis as Record<string, unknown> | null
   const research = report.companyResearch as Record<string, unknown> | null
+  const coverLetter = report.coverLetter as { content: string; tone: string; length: string; version: number; isEdited: boolean } | null
 
   let md = `# Job Application Report\n\n`
   md += `Generated: ${report.generatedAt}\n\n`
@@ -195,6 +213,14 @@ function generateMarkdownReport(report: Record<string, unknown>): string {
       md += `**Score:** ${ethics.score}/10\n\n`
       md += `${ethics.recommendation}\n`
     }
+  }
+
+  if (coverLetter) {
+    md += `\n---\n\n## Cover Letter\n\n`
+    md += `**Tone:** ${coverLetter.tone} | **Length:** ${coverLetter.length} | **Version:** ${coverLetter.version}`
+    if (coverLetter.isEdited) md += ` (Edited)`
+    md += `\n\n`
+    md += `${coverLetter.content}\n`
   }
 
   return md

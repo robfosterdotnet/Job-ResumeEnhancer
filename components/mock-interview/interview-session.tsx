@@ -77,7 +77,7 @@ export function InterviewSession({
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string>("")
   const abortControllerRef = useRef<AbortController | null>(null)
-  const endInterviewRef = useRef<() => Promise<void>>()
+  const endInterviewRef = useRef<(() => Promise<void>) | undefined>(undefined)
   const currentQuestionRef = useRef<CurrentQuestion | null>(null)
 
   // Speech output for reading questions aloud

@@ -289,6 +289,40 @@ export const mockInterviewMetrics = sqliteTable("mock_interview_metrics", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// ============ COVER LETTER TABLE ============
+
+export const coverLetters = sqliteTable("cover_letters", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  jobApplicationId: integer("job_application_id")
+    .references(() => jobApplications.id)
+    .notNull(),
+
+  // Generation parameters
+  tone: text("tone").$type<"formal" | "conversational" | "enthusiastic">().notNull(),
+  length: text("length").$type<"short" | "medium" | "long">().notNull(),
+  useAnalysisInsights: integer("use_analysis_insights", { mode: "boolean" }).default(true),
+
+  // Content structure
+  greeting: text("greeting").notNull(),
+  openingParagraph: text("opening_paragraph").notNull(),
+  bodyParagraphs: text("body_paragraphs").notNull(), // JSON array
+  closingParagraph: text("closing_paragraph").notNull(),
+  signOff: text("sign_off").notNull(),
+
+  // Full compiled letter
+  fullContent: text("full_content").notNull(),
+
+  // Edit tracking
+  isEdited: integer("is_edited", { mode: "boolean" }).default(false),
+  editedContent: text("edited_content"),
+
+  // Metadata
+  versionNumber: integer("version_number").notNull().default(1),
+  rawResponseJson: text("raw_response_json"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============ RELATIONS ============
 
 export const resumesRelations = relations(resumes, ({ many }) => ({
@@ -313,6 +347,7 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one, many 
   chatSessions: many(chatSessions),
   mockInterviewSessions: many(mockInterviewSessions),
   mockInterviewMetrics: one(mockInterviewMetrics),
+  coverLetters: many(coverLetters),
 }))
 
 export const resumeAnalysesRelations = relations(resumeAnalyses, ({ one, many }) => ({
@@ -429,6 +464,13 @@ export const mockInterviewResponsesRelations = relations(mockInterviewResponses,
 export const mockInterviewMetricsRelations = relations(mockInterviewMetrics, ({ one }) => ({
   jobApplication: one(jobApplications, {
     fields: [mockInterviewMetrics.jobApplicationId],
+    references: [jobApplications.id],
+  }),
+}))
+
+export const coverLettersRelations = relations(coverLetters, ({ one }) => ({
+  jobApplication: one(jobApplications, {
+    fields: [coverLetters.jobApplicationId],
     references: [jobApplications.id],
   }),
 }))

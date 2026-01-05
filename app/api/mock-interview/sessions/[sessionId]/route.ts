@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { mockInterviewSessions, mockInterviewResponses } from "@/lib/db/schema"
+import { mockInterviewSessions, mockInterviewResponses, mockInterviewMetrics } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { requireAuth } from "@/lib/auth/middleware"
 

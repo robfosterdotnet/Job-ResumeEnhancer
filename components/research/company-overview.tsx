@@ -30,8 +30,15 @@ interface CompanyOverviewProps {
   } | null
 }
 
+interface CoreBusiness {
+  products?: string
+  targetMarket?: string
+  competitiveAdvantage?: string
+  description?: string
+}
+
 export function CompanyOverview({ company, research }: CompanyOverviewProps) {
-  const coreBusiness = safeJsonParse(research?.coreBusinessJson, null)
+  const coreBusiness = safeJsonParse<CoreBusiness | null>(research?.coreBusinessJson, null)
 
   return (
     <Card>
