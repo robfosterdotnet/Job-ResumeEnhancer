@@ -7,24 +7,25 @@ on:
         description: "Vercel environment (production|preview)"
         required: true
         default: production
-      ref:
-        description: "Branch, tag, or SHA to deploy"
-        required: false
-
-concurrency:
-  group: deploy-vercel-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Check deploy configuration
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Skipping deploy: missing required secrets (VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID)."
+            exit 0
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,18 +37,20 @@ jobs:
         run: npm ci
 
       - name: Pull Vercel config
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: npx vercel@latest pull --yes --environment=${{ github.event.inputs.environment }} --token=$VERCEL_TOKEN
 
       - name: Build (Vercel)
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx vercel@latest build ${{ github.event.inputs.environment == 'production' && '--prod' || '' }} --token=$VERCEL_TOKEN
+        run: |
+          PROD_FLAG=""
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            PROD_FLAG="--prod"
+          fi
+          npx vercel@latest build $PROD_FLAG --token="$VERCEL_TOKEN"
 
       - name: Deploy (Vercel)
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx vercel@latest deploy --prebuilt ${{ github.event.inputs.environment == 'production' && '--prod' || '' }} --token=$VERCEL_TOKEN
+        run: |
+          PROD_FLAG=""
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            PROD_FLAG="--prod"
+          fi
+          npx vercel@latest deploy --prebuilt $PROD_FLAG --token="$VERCEL_TOKEN"
