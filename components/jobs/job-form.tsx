@@ -8,9 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Link as LinkIcon, FileText, AlertCircle } from "lucide-react"
+import { Loader2, Link as LinkIcon, FileText, AlertCircle, ClipboardCopy } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+
+interface GarbageContentErrorData {
+  isGarbageError: boolean
+  message: string
+}
 
 export function JobForm() {
   const router = useRouter()
@@ -18,6 +23,7 @@ export function JobForm() {
   const [scraping, setScraping] = useState(false)
   const [error, setError] = useState("")
   const [showPasteHint, setShowPasteHint] = useState(false)
+  const [garbageError, setGarbageError] = useState<GarbageContentErrorData | null>(null)
 
   const [title, setTitle] = useState("")
   const [companyName, setCompanyName] = useState("")
@@ -33,6 +39,7 @@ export function JobForm() {
 
     setScraping(true)
     setError("")
+    setGarbageError(null)
     setScrapingStatus("Fetching page...")
 
     try {
@@ -46,6 +53,18 @@ export function JobForm() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Check if this is a garbage content detection error
+        if (data.garbageDetected && data.suggestManualPaste) {
+          // Set the garbage error state and auto-switch to paste tab
+          setGarbageError({
+            isGarbageError: true,
+            message: data.error || "This job posting couldn't be automatically extracted.",
+          })
+          // Auto-switch to paste tab for better UX
+          setActiveTab("text")
+          // Don't populate any fields with garbage data
+          return
+        }
         throw new Error(data.error || "Failed to scrape URL")
       }
 
@@ -70,6 +89,11 @@ export function JobForm() {
     setActiveTab("text")
     setError("")
     setShowPasteHint(false)
+    setGarbageError(null)
+  }
+
+  const dismissGarbageError = () => {
+    setGarbageError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,6 +152,40 @@ export function JobForm() {
                   Click here to paste the job description manually instead
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {garbageError && (
+        <div className="p-4 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 text-sm">
+          <div className="flex items-start gap-3">
+            <ClipboardCopy className="h-5 w-5 mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 space-y-3">
+              <div>
+                <p className="font-medium mb-1">Manual copy/paste required</p>
+                <p className="text-amber-800 dark:text-amber-200">
+                  This job site uses dynamic content that couldn&apos;t be automatically extracted.
+                  This is common with sites like Workday, BrassRing, Taleo, and iCIMS.
+                </p>
+              </div>
+              <div className="bg-amber-100 dark:bg-amber-900/30 rounded p-3">
+                <p className="font-medium text-amber-900 dark:text-amber-100 mb-2">To add this job:</p>
+                <ol className="list-decimal list-inside space-y-1 text-amber-800 dark:text-amber-200">
+                  <li>Open the job posting in your browser</li>
+                  <li>Select and copy all the job description text</li>
+                  <li>Paste it in the text area below</li>
+                </ol>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={dismissGarbageError}
+                className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+              >
+                Dismiss
+              </Button>
             </div>
           </div>
         </div>

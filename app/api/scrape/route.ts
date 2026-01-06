@@ -6,6 +6,10 @@ import {
   cleanJobDescription,
   formatCleanedJobDescription,
 } from "@/lib/ai/agents/job-description-cleaner"
+import {
+  detectGarbageContent,
+  createGarbageContentErrorMessage,
+} from "@/lib/utils/garbage-detector"
 
 // Scraper requires Node.js runtime for DNS resolution
 export const runtime = "nodejs"
@@ -35,10 +39,54 @@ export async function POST(request: NextRequest) {
 
     const result = await scrapeJobUrl(url)
 
+    // Check for garbage/template content BEFORE processing
+    const garbageCheck = detectGarbageContent(result.description, url)
+
+    if (garbageCheck.isGarbage) {
+      logger.info("Detected garbage content from JS-heavy site", {
+        url,
+        confidence: garbageCheck.confidence,
+        reasons: garbageCheck.reasons,
+      })
+
+      const userMessage = createGarbageContentErrorMessage(garbageCheck, url)
+
+      return NextResponse.json({
+        error: userMessage,
+        garbageDetected: true,
+        confidence: garbageCheck.confidence,
+        reasons: garbageCheck.reasons,
+        suggestManualPaste: true,
+      }, { status: 422 }) // 422 Unprocessable Entity - content exists but can't be used
+    }
+
     // If clean=true (default), use AI to extract and format the job description
     if (clean) {
       try {
         const cleaned = await cleanJobDescription(result.description)
+
+        // Double-check the AI output for garbage (AI might have preserved template syntax)
+        const cleanedGarbageCheck = detectGarbageContent(
+          cleaned.title + " " + cleaned.description,
+          url
+        )
+
+        if (cleanedGarbageCheck.isGarbage && cleanedGarbageCheck.confidence === "high") {
+          logger.warn("AI cleanup produced garbage content", {
+            url,
+            confidence: cleanedGarbageCheck.confidence,
+          })
+
+          const userMessage = createGarbageContentErrorMessage(cleanedGarbageCheck, url)
+
+          return NextResponse.json({
+            error: userMessage,
+            garbageDetected: true,
+            confidence: cleanedGarbageCheck.confidence,
+            suggestManualPaste: true,
+          }, { status: 422 })
+        }
+
         const formattedDescription = formatCleanedJobDescription(cleaned)
 
         return NextResponse.json({
