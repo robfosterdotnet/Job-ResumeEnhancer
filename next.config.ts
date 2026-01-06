@@ -36,10 +36,11 @@ const securityHeaders = [
     value: "strict-origin-when-cross-origin",
   },
   // Restrict browser features/APIs
+  // Note: microphone=(self) is required for voice input in Mock Interview feature
   // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+    value: "camera=(), microphone=(self), geolocation=(), browsing-topics=()",
   },
   // Content Security Policy
   // Note: 'unsafe-inline' is required for:
