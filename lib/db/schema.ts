@@ -463,6 +463,51 @@ export const masterResumeVersions = sqliteTable("master_resume_versions", {
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// ============ INTERVIEWER PROFILES TABLE ============
+
+export const interviewerProfiles = sqliteTable("interviewer_profiles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  jobApplicationId: integer("job_application_id")
+    .references(() => jobApplications.id)
+    .notNull(),
+
+  // Basic Info (user input)
+  name: text("name").notNull(),
+  role: text("role"), // Their role: "Engineering Manager", "Senior Developer"
+  interviewRole: text("interview_role").$type<
+    "hiring_manager" | "technical" | "hr" | "peer" | "executive" | "other"
+  >(), // Their role in the interview
+  linkedInUrl: text("linkedin_url"),
+
+  // Parsed from LinkedIn (reuse linkedin-parser.ts)
+  headline: text("headline"),
+  summary: text("summary"),
+  location: text("location"),
+  experienceJson: text("experience_json"), // Array of positions
+  educationJson: text("education_json"), // Array of education
+  skillsJson: text("skills_json"), // Array of skills
+  rawLinkedInContent: text("raw_linkedin_content"),
+
+  // AI-Generated Interview Insights
+  expertiseAreasJson: text("expertise_areas_json"), // What they specialize in
+  likelyInterviewFocus: text("likely_interview_focus").$type<
+    "technical" | "behavioral" | "culture" | "mixed"
+  >(),
+  questionsTheyMayAskJson: text("questions_they_may_ask_json"),
+  suggestedQuestionsToAskJson: text("suggested_questions_to_ask_json"),
+  talkingPointsJson: text("talking_points_json"), // Common ground, conversation starters
+  interviewTipsJson: text("interview_tips_json"), // How to approach this interviewer
+
+  // Status
+  analysisStatus: text("analysis_status")
+    .$type<"pending" | "analyzing" | "completed" | "failed">()
+    .default("pending"),
+  rawResponseJson: text("raw_response_json"),
+
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============ DASHBOARD TABLES ============
 
 export const activityLogs = sqliteTable("activity_logs", {
@@ -518,6 +563,7 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one, many 
   coverLetters: many(coverLetters),
   activityLogs: many(activityLogs),
   linkedInAnalyses: many(linkedInAnalyses),
+  interviewerProfiles: many(interviewerProfiles),
 }))
 
 export const resumeAnalysesRelations = relations(resumeAnalyses, ({ one, many }) => ({
@@ -665,6 +711,14 @@ export const linkedInAnalysesRelations = relations(linkedInAnalyses, ({ one }) =
 export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   jobApplication: one(jobApplications, {
     fields: [activityLogs.jobApplicationId],
+    references: [jobApplications.id],
+  }),
+}))
+
+// Interviewer Profiles Relations
+export const interviewerProfilesRelations = relations(interviewerProfiles, ({ one }) => ({
+  jobApplication: one(jobApplications, {
+    fields: [interviewerProfiles.jobApplicationId],
     references: [jobApplications.id],
   }),
 }))

@@ -11,6 +11,7 @@ import {
   Play,
   FileEdit,
   Linkedin,
+  Users,
 } from "lucide-react"
 import { ResumeUploader } from "@/components/jobs/resume-uploader"
 import { ExportButton } from "@/components/jobs/export-button"
@@ -78,6 +79,12 @@ export function ActionsCard({
             <Button variant="outline" disabled={!hasAnalysis || interviewQuestionsCount === 0}>
               <Play className="mr-2 h-4 w-4" />
               Mock Interview
+            </Button>
+          </Link>
+          <Link href={`/jobs/${jobId}/interviewers`}>
+            <Button variant="outline">
+              <Users className="mr-2 h-4 w-4" />
+              Interviewers
             </Button>
           </Link>
           <Link href={`/jobs/${jobId}/cover-letter`}>

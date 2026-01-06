@@ -44,6 +44,16 @@ interface Metrics {
   scoreHistoryJson: string | null
 }
 
+interface Interviewer {
+  id: number
+  name: string
+  role?: string | null
+  interviewRole?: string | null
+  expertiseAreasJson?: string | null
+  likelyInterviewFocus?: string | null
+  analysisStatus: string
+}
+
 export default function MockInterviewPage({ params }: PageProps) {
   const { jobId } = use(params)
   const router = useRouter()
@@ -56,6 +66,7 @@ export default function MockInterviewPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null)
   const [hasAnalysis, setHasAnalysis] = useState(false)
   const [analysisId, setAnalysisId] = useState<number | null>(null)
+  const [interviewers, setInterviewers] = useState<Interviewer[]>([])
 
   // Fetch sessions and check for analysis
   useEffect(() => {
@@ -85,6 +96,13 @@ export default function MockInterviewPage({ params }: PageProps) {
             }
           }
         }
+
+        // Fetch interviewers
+        const interviewersRes = await fetch(`/api/interviewers?jobId=${id}`)
+        if (interviewersRes.ok) {
+          const interviewersData = await interviewersRes.json()
+          setInterviewers(interviewersData.interviewers || [])
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data")
       } finally {
@@ -111,6 +129,7 @@ export default function MockInterviewPage({ params }: PageProps) {
           selectedCategories: config.selectedCategories.length > 0 ? config.selectedCategories : null,
           difficulty: config.difficulty,
           voiceEnabled: config.voiceEnabled,
+          selectedInterviewerIds: config.selectedInterviewerIds.length > 0 ? config.selectedInterviewerIds : null,
         }),
       })
 
@@ -279,6 +298,7 @@ export default function MockInterviewPage({ params }: PageProps) {
         open={isSetupOpen}
         onOpenChange={setIsSetupOpen}
         onStart={handleStartInterview}
+        interviewers={interviewers}
       />
     </div>
   )

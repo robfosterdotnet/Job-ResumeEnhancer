@@ -13,6 +13,17 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Play, Mic, Volume2 } from "lucide-react"
+import { InterviewerSelector } from "@/components/interviewers/interviewer-selector"
+
+interface InterviewerOption {
+  id: number
+  name: string
+  role?: string | null
+  interviewRole?: string | null
+  expertiseAreasJson?: string | null
+  likelyInterviewFocus?: string | null
+  analysisStatus: string
+}
 
 interface InterviewSetupDialogProps {
   open: boolean
@@ -20,6 +31,7 @@ interface InterviewSetupDialogProps {
   onStart: (config: InterviewConfig) => void
   availableCategories?: string[]
   maxQuestions?: number
+  interviewers?: InterviewerOption[]
 }
 
 export interface InterviewConfig {
@@ -28,6 +40,7 @@ export interface InterviewConfig {
   selectedCategories: string[]
   difficulty: "mixed" | "easy" | "medium" | "hard"
   voiceEnabled: boolean
+  selectedInterviewerIds: number[]
 }
 
 const categoryLabels: Record<string, string> = {
@@ -53,6 +66,7 @@ export function InterviewSetupDialog({
   onStart,
   availableCategories = ["behavioral", "technical", "situational", "company-specific", "role-specific"],
   maxQuestions = 20,
+  interviewers = [],
 }: InterviewSetupDialogProps) {
   const [config, setConfig] = useState<InterviewConfig>({
     feedbackMode: "immediate",
@@ -60,6 +74,7 @@ export function InterviewSetupDialog({
     selectedCategories: [],
     difficulty: "mixed",
     voiceEnabled: false,
+    selectedInterviewerIds: [],
   })
 
   const toggleCategory = (category: string) => {
@@ -212,6 +227,17 @@ export function InterviewSetupDialog({
               </div>
             </button>
           </div>
+
+          {/* Interviewer Selection */}
+          {interviewers.length > 0 && (
+            <InterviewerSelector
+              interviewers={interviewers}
+              selectedIds={config.selectedInterviewerIds}
+              onChange={(ids) =>
+                setConfig((prev) => ({ ...prev, selectedInterviewerIds: ids }))
+              }
+            />
+          )}
         </div>
 
         <DialogFooter>
