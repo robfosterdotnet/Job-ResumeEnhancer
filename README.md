@@ -12,13 +12,16 @@ A comprehensive job search assistant that analyzes resumes, researches companies
 ## Screenshots
 
 ### Dashboard with Kanban Pipeline
-![Dashboard](docs/screenshots/01-empty-dashboard.png)
+![Dashboard](docs/screenshots/01-dashboard-kanban.png)
 
 ### Resume Analysis with Fit Score
 ![Resume Analysis](docs/screenshots/05-resume-analysis.png)
 
 ### Company Research
 ![Company Research](docs/screenshots/06-company-research.png)
+
+### LinkedIn Profile Optimizer
+![LinkedIn Optimizer](docs/screenshots/linkedin-optimizer.png)
 
 ### Mock Interview Practice
 ![Mock Interview](docs/screenshots/09-mock-interview-question.png)
