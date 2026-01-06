@@ -326,6 +326,74 @@ export const coverLetters = sqliteTable("cover_letters", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 })
 
+// ============ LINKEDIN PROFILE TABLES ============
+
+export const linkedInProfiles = sqliteTable("linkedin_profiles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  // Profile Data
+  profileUrl: text("profile_url"),
+  fullName: text("full_name"),
+  headline: text("headline"),
+  summary: text("summary"),
+  location: text("location"),
+
+  // Parsed Sections (stored as JSON)
+  experienceJson: text("experience_json"), // Array of positions
+  educationJson: text("education_json"), // Array of education entries
+  skillsJson: text("skills_json"), // Array of skills
+  certificationsJson: text("certifications_json"),
+
+  // Raw Content (for re-analysis)
+  rawContent: text("raw_content"),
+
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
+export const linkedInAnalyses = sqliteTable("linkedin_analyses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  linkedInProfileId: integer("linkedin_profile_id")
+    .references(() => linkedInProfiles.id)
+    .notNull(),
+  jobApplicationId: integer("job_application_id")
+    .references(() => jobApplications.id),
+
+  // Target Role Info
+  targetRole: text("target_role"),
+  targetIndustry: text("target_industry"),
+
+  // Scores
+  overallScore: real("overall_score"), // 0-100
+  headlineScore: real("headline_score"),
+  summaryScore: real("summary_score"),
+  experienceScore: real("experience_score"),
+  skillsScore: real("skills_score"),
+  completenessScore: real("completeness_score"),
+  keywordScore: real("keyword_score"),
+
+  // Analysis Results
+  overallSummary: text("overall_summary"),
+  headlineAnalysisJson: text("headline_analysis_json"),
+  summaryAnalysisJson: text("summary_analysis_json"),
+  experienceAnalysisJson: text("experience_analysis_json"),
+  skillsAnalysisJson: text("skills_analysis_json"),
+
+  // Suggestions
+  suggestedHeadlinesJson: text("suggested_headlines_json"), // Array of 3 headline options
+  suggestedSummary: text("suggested_summary"),
+  suggestedSkillsJson: text("suggested_skills_json"),
+  keywordsToAddJson: text("keywords_to_add_json"),
+
+  // Completeness Checklist
+  completenessChecklistJson: text("completeness_checklist_json"),
+
+  // Raw Response
+  rawResponseJson: text("raw_response_json"),
+
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+})
+
 // ============ USER SETTINGS TABLE ============
 
 export const userSettings = sqliteTable("user_settings", {
@@ -449,6 +517,7 @@ export const jobApplicationsRelations = relations(jobApplications, ({ one, many 
   mockInterviewMetrics: one(mockInterviewMetrics),
   coverLetters: many(coverLetters),
   activityLogs: many(activityLogs),
+  linkedInAnalyses: many(linkedInAnalyses),
 }))
 
 export const resumeAnalysesRelations = relations(resumeAnalyses, ({ one, many }) => ({
@@ -572,6 +641,22 @@ export const mockInterviewMetricsRelations = relations(mockInterviewMetrics, ({ 
 export const coverLettersRelations = relations(coverLetters, ({ one }) => ({
   jobApplication: one(jobApplications, {
     fields: [coverLetters.jobApplicationId],
+    references: [jobApplications.id],
+  }),
+}))
+
+// LinkedIn Relations
+export const linkedInProfilesRelations = relations(linkedInProfiles, ({ many }) => ({
+  analyses: many(linkedInAnalyses),
+}))
+
+export const linkedInAnalysesRelations = relations(linkedInAnalyses, ({ one }) => ({
+  profile: one(linkedInProfiles, {
+    fields: [linkedInAnalyses.linkedInProfileId],
+    references: [linkedInProfiles.id],
+  }),
+  jobApplication: one(jobApplications, {
+    fields: [linkedInAnalyses.jobApplicationId],
     references: [jobApplications.id],
   }),
 }))

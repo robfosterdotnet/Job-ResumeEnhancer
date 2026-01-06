@@ -8,12 +8,14 @@ import {
   Settings,
   Plus,
   FileText,
+  Linkedin,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Jobs", href: "/jobs", icon: Briefcase },
+  { name: "LinkedIn", href: "/linkedin", icon: Linkedin },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 

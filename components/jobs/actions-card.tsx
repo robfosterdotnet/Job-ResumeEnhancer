@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Play,
   FileEdit,
+  Linkedin,
 } from "lucide-react"
 import { ResumeUploader } from "@/components/jobs/resume-uploader"
 import { ExportButton } from "@/components/jobs/export-button"
@@ -83,6 +84,12 @@ export function ActionsCard({
             <Button variant="outline" disabled={!hasResume}>
               <FileEdit className="mr-2 h-4 w-4" />
               Cover Letter
+            </Button>
+          </Link>
+          <Link href={`/jobs/${jobId}/linkedin`}>
+            <Button variant="outline">
+              <Linkedin className="mr-2 h-4 w-4" />
+              LinkedIn Align
             </Button>
           </Link>
           <ExportButton jobId={jobId} jobTitle={jobTitle} />
