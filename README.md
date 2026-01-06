@@ -1,14 +1,25 @@
 # Job Resume Enhancer
 
-A personal job search tool that analyzes your resume against job postings and deeply researches companies before applying. Built with Next.js, Azure OpenAI, and Anthropic-inspired design.
+A comprehensive job search assistant that analyzes resumes, researches companies, optimizes LinkedIn profiles, and prepares you for interviews. Built with Next.js, Azure OpenAI, and Anthropic-inspired design.
 
 [![CI](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml/badge.svg)](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-1.3-blue)
+![Tests](https://img.shields.io/badge/tests-146%20passing-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)
 
 ## Features
 
+### Interactive Dashboard
+- **Kanban Pipeline** - Visual drag-and-drop job tracking across stages
+- **Metrics Bar** - At-a-glance stats with trend indicators
+- **Activity Timeline** - Chronological feed of all actions with pagination
+- **Skill Gap Analysis** - Aggregated skills across all jobs with "learned" toggle
+- **Interview Readiness Score** - Based on mock interview performance
+- **AI Suggestions** - Smart next steps based on job status
+
 ### Resume Analysis
 - Upload resume (PDF, DOCX, TXT) or paste text directly
-- Enter job description URL (auto-scrapes) or paste text
+- Enter job description URL (auto-scrapes with AI cleanup) or paste text
 - Get a 0-100% fit score with detailed breakdown
 - View strengths and areas for improvement
 - Receive specific enhancement suggestions with before/after text
@@ -24,16 +35,29 @@ A personal job search tool that analyzes your resume against job postings and de
 - Legal issues and regulatory concerns
 - Ethics alignment scoring
 
-### Chat Assistant
-- Conversational interface with your saved research data
-- Ask follow-up questions about analysis or company research
-- Markdown-rendered responses with bullet points, lists, and formatting
-- Session management for multiple conversations per job
+### LinkedIn Profile Optimization
+- **Profile Scoring** - Overall score + section scores (headline, summary, experience, skills)
+- **Headline Alternatives** - 3 AI-generated headline options
+- **Summary Rewrite** - Optimized summary with copy button
+- **Skills Analysis** - Current vs. recommended skills
+- **SEO Keywords** - Keyword suggestions for better discoverability
+- **Completeness Checklist** - Missing sections and improvement opportunities
+- **Job-Aligned Mode** - Optimize for specific job requirements
+
+### Interviewer Profile Research
+- Parse interviewer LinkedIn profiles
+- Identify expertise areas and likely interview focus
+- Predict questions they may ask (with reasons)
+- Suggest questions to ask them
+- Find talking points and common ground
+- Interviewer-specific preparation tips
+- Integration with Mock Interview for personalized practice
 
 ### Mock Interview Practice
 - Practice answering interview questions generated from your resume analysis
 - Choose between immediate feedback or summary-at-end modes
 - Select number of questions (5-20), difficulty, and focus categories
+- Select specific interviewers to simulate
 - AI-powered evaluation with STAR method analysis
 - Detailed scoring (0-100) with strengths and improvement areas
 - Dynamic follow-up questions based on your answers
@@ -50,9 +74,23 @@ A personal job search tool that analyzes your resume against job postings and de
 - Copy to clipboard or download as text
 - Included in job exports
 
+### Chat Assistant
+- Conversational interface with your saved research data
+- Ask follow-up questions about analysis or company research
+- Markdown-rendered responses with bullet points, lists, and formatting
+- Session management for multiple conversations per job
+
+### Settings & Customization
+- **Profile & Master Resume** - Store master resume with version tracking
+- **AI Preferences** - Analysis depth, cover letter defaults, research settings
+- **Appearance** - Light/dark theme, accent colors, UI density, font size
+- **Data Management** - Export/import JSON backup, selective data clear
+- **Integrations** - Azure OpenAI and Brave Search connection testing
+
 ### Application Tracking
 - Manage multiple job applications in one dashboard
 - Track status: Saved → Analyzing → Applied → Interviewing → Offered
+- Delete jobs with proper cascade through all related data
 - Export reports as JSON or Markdown
 
 ## Tech Stack
@@ -61,10 +99,24 @@ A personal job search tool that analyzes your resume against job postings and de
 |-------|------------|
 | Framework | Next.js 16+ (App Router) + TypeScript |
 | AI | Azure OpenAI (gpt-5.2 deployment) |
-| Database | SQLite + Drizzle ORM |
+| Database | SQLite + Drizzle ORM (20 tables) |
 | Web Search | Brave Search API (primary) + DuckDuckGo (fallback) |
 | UI | Tailwind CSS v4 + shadcn/ui + Anthropic brand colors |
-| Testing | Vitest + React Testing Library |
+| Drag & Drop | @dnd-kit |
+| Testing | Vitest + React Testing Library (146 tests) |
+| CI/CD | GitHub Actions |
+
+### Codebase Metrics
+
+| Metric | Count |
+|--------|-------|
+| TypeScript Files | 256 |
+| React Components | 88 |
+| API Routes | 34 |
+| AI Agents | 7 |
+| Database Tables | 20 |
+| Test Files | 16 |
+| Tests Passing | 146 |
 
 ## Getting Started
 
@@ -109,25 +161,37 @@ AZURE_OPENAI_API_VERSION=2024-07-01-preview
 # Database
 DATABASE_URL=file:./data/resume-enhancer.db
 
+# Authentication (required for production)
+AUTH_SECRET_TOKEN=your-secure-random-token-min-32-chars
+
 # Web Search (optional - falls back to DuckDuckGo if not set)
 BRAVE_SEARCH_API_KEY=your-brave-api-key
+
+# Logging (optional)
+LOG_LEVEL=warn
 ```
 
 ## Application Walkthrough
 
-### 1. Create a New Job Application
+### 1. Dashboard Overview
 
-Start by clicking "New Job Application" from the sidebar. Enter the job title, company name, and paste the job description.
+The dashboard provides a visual Kanban pipeline for managing your job applications. Drag and drop jobs between stages, view metrics, track activity, and get AI-powered suggestions.
+
+![Empty Dashboard](docs/screenshots/01-empty-dashboard.png)
+
+### 2. Create a New Job Application
+
+Start by clicking "New Job Application" from the sidebar. Enter the job title, company name, and paste the job description (or enter a URL to auto-scrape).
 
 ![New Job Form](docs/screenshots/02-new-job-form.png)
 
-### 2. Upload Your Resume
+### 3. Upload Your Resume
 
-After creating the job, you'll see the job detail page. Upload your resume (PDF, DOCX, or TXT) or paste the text directly.
+After creating the job, you'll see the job detail page. Upload your resume (PDF, DOCX, or TXT) via drag-and-drop or click to browse.
 
 ![Job Detail with Resume](docs/screenshots/04-resume-uploaded.png)
 
-### 3. Analyze Your Resume
+### 4. Analyze Your Resume
 
 Click "Analyze Resume" to get AI-powered insights on how well your resume matches the job description.
 
@@ -137,11 +201,11 @@ The analysis includes:
 - **Fit Score** (0-100%) - How well your resume matches the job
 - **Strengths** - What you're doing well
 - **Areas for Improvement** - Specific suggestions to improve
-- **Enhancement Suggestions** - Before/after text improvements
+- **Enhancement Suggestions** - Before/after text improvements with copy buttons
 - **Keyword Analysis** - Matched and missing keywords
 - **Interview Questions** - Likely questions with suggested answers
 
-### 4. Research the Company
+### 5. Research the Company
 
 Click "Research Company" to gather detailed information about the company using web search.
 
@@ -156,17 +220,48 @@ Company research includes:
 - Legal issues and regulatory concerns
 - Ethics alignment scoring
 
-### 5. Practice with Mock Interviews
+### 6. Optimize Your LinkedIn Profile
+
+Click "LinkedIn Align" to analyze and optimize your LinkedIn profile for the specific job.
+
+Features include:
+- Overall profile score with section breakdowns
+- Three alternative headline suggestions
+- Rewritten summary optimized for the role
+- Skills analysis with add/remove recommendations
+- SEO keyword suggestions
+- Completeness checklist
+
+You can also access standalone LinkedIn optimization from the sidebar (/linkedin).
+
+### 7. Research Your Interviewers
+
+Click "Interviewers" to add and research members of your interview panel.
+
+Paste each interviewer's LinkedIn profile to get:
+- Expertise areas and interview focus prediction
+- Questions they're likely to ask (with reasons)
+- Questions to ask them
+- Talking points and common ground
+- Preparation tips specific to each interviewer
+
+### 8. Practice with Mock Interviews
 
 Click "Mock Interview" to practice answering interview questions with AI-powered feedback.
 
 ![Mock Interview Dashboard](docs/screenshots/07-mock-interview-dashboard.png)
 
-Configure your practice session with feedback mode, number of questions, difficulty, and focus categories.
+Configure your practice session:
 
 ![Mock Interview Setup](docs/screenshots/08-mock-interview-setup.png)
 
-Answer questions and receive immediate feedback with STAR method analysis.
+- **Feedback Mode**: Immediate or summary-at-end
+- **Questions**: 5-20 questions per session
+- **Difficulty**: Entry to Executive level
+- **Categories**: Behavioral, Technical, Situational, etc.
+- **Interviewers**: Select specific interviewers to simulate
+
+Answer questions and receive feedback:
 
 ![Mock Interview Question](docs/screenshots/09-mock-interview-question.png)
 
@@ -178,11 +273,11 @@ The AI evaluates your answers based on:
 
 ![Mock Interview Feedback](docs/screenshots/10-mock-interview-feedback.png)
 
-At the end of your session, get a comprehensive summary with overall score, strengths, areas to improve, and practice recommendations.
+Get a comprehensive session summary:
 
 ![Mock Interview Summary](docs/screenshots/11-mock-interview-summary.png)
 
-### 6. Generate Cover Letters
+### 9. Generate Cover Letters
 
 Click "Cover Letter" to generate tailored cover letters for your application.
 
@@ -193,65 +288,95 @@ Configure your cover letter with:
 - **Length**: Short (2-3 paragraphs), medium (3-4), or long (4-5)
 - **Use Analysis Insights**: Optionally incorporate strengths from your resume analysis
 
-Generate multiple versions, edit inline, copy to clipboard, or download as text. All cover letters are saved and included in job exports.
+Generate multiple versions, edit inline, copy to clipboard, or download as text.
+
+### 10. Customize Settings
+
+Access Settings from the sidebar to customize your experience:
+
+- **Profile**: Set your name, email, and master resume
+- **AI Preferences**: Configure analysis depth and defaults
+- **Appearance**: Choose theme (light/dark), accent color, density
+- **Data Management**: Export/import data, clear specific data types
+- **Integrations**: Test Azure OpenAI and Brave Search connections
 
 ## Quick Start Usage
 
-1. **Create a Job Application** - Click "New Job Application" and enter the job details
-
-2. **Upload Your Resume** - On the job detail page, upload your resume file or paste the text
-
-3. **Run Resume Analysis** - Click "Analyze Resume" to get your fit score and interview questions
-
-4. **Research the Company** - Click "Research Company" to gather company intelligence
-
-5. **Practice Interviews** - Click "Mock Interview" to practice with AI feedback
-
-6. **Generate Cover Letters** - Click "Cover Letter" to create tailored cover letters
-
-7. **Chat with Your Data** - Use the chat interface for follow-up questions
-
-8. **Export Reports** - Download your analysis, research, and cover letters as JSON or Markdown
+1. **View Dashboard** - See all your job applications in a visual Kanban pipeline
+2. **Create a Job Application** - Click "New Job" and enter the job details
+3. **Upload Your Resume** - Drag and drop your resume file
+4. **Run Resume Analysis** - Click "Analyze Resume" to get your fit score
+5. **Research the Company** - Click "Research Company" for company intelligence
+6. **Optimize LinkedIn** - Click "LinkedIn Align" to optimize your profile
+7. **Add Interviewers** - Click "Interviewers" to research your interview panel
+8. **Practice Interviews** - Click "Mock Interview" to practice with AI feedback
+9. **Generate Cover Letters** - Click "Cover Letter" to create tailored letters
+10. **Chat with Your Data** - Use the chat interface for follow-up questions
+11. **Export Reports** - Download your analysis as JSON or Markdown
 
 ## Project Structure
 
 ```
 Job-ResumeEnhancer/
 ├── app/
-│   ├── (dashboard)/          # Dashboard pages (route group)
-│   │   ├── page.tsx          # Main dashboard
+│   ├── (dashboard)/              # Dashboard pages (route group)
+│   │   ├── page.tsx              # Main dashboard with Kanban
 │   │   ├── jobs/
-│   │   │   ├── page.tsx      # Jobs list
-│   │   │   ├── new/          # New job form
-│   │   │   └── [jobId]/      # Job detail & sub-pages
+│   │   │   ├── page.tsx          # Jobs list
+│   │   │   ├── new/              # New job form
+│   │   │   └── [jobId]/          # Job detail & sub-pages
 │   │   │       ├── resume-analysis/
 │   │   │       ├── company-research/
 │   │   │       ├── cover-letter/
+│   │   │       ├── linkedin/     # Job-aligned LinkedIn optimization
+│   │   │       ├── interviewers/ # Interviewer research
 │   │   │       ├── chat/
 │   │   │       └── mock-interview/
-│   │   └── layout.tsx        # Dashboard layout with sidebar
+│   │   ├── linkedin/             # Standalone LinkedIn optimization
+│   │   ├── settings/             # Application settings
+│   │   └── layout.tsx            # Dashboard layout with sidebar
 │   └── api/
-│       ├── agents/           # AI agent endpoints (streaming)
-│       ├── jobs/             # CRUD operations
-│       ├── chat/             # Chat endpoint
-│       ├── export/           # Report generation
-│       ├── scrape/           # URL scraping
-│       └── parse/            # Document parsing
+│       ├── agents/               # AI agent endpoints (streaming)
+│       │   ├── resume-analyzer/
+│       │   ├── company-research/
+│       │   ├── mock-interviewer/
+│       │   ├── cover-letter/
+│       │   ├── linkedin-optimizer/
+│       │   └── interviewer-analyzer/
+│       ├── jobs/                 # Job CRUD operations
+│       ├── chat/                 # Chat endpoint
+│       ├── dashboard/            # Dashboard data endpoints
+│       ├── settings/             # Settings CRUD
+│       ├── linkedin-profiles/    # LinkedIn profile storage
+│       ├── interviewers/         # Interviewer CRUD
+│       ├── mock-interview/       # Mock interview sessions
+│       ├── export/               # Report generation
+│       ├── files/                # Secure file serving
+│       ├── scrape/               # URL scraping
+│       └── parse/                # Document parsing
 ├── components/
-│   ├── ui/                   # Base UI components
-│   ├── analysis/             # Resume analysis views
-│   ├── research/             # Company research views
-│   ├── cover-letter/         # Cover letter generation
-│   ├── chat/                 # Chat interface
-│   ├── mock-interview/       # Mock interview components
-│   ├── dashboard/            # Layout components
-│   └── jobs/                 # Job management
+│   ├── ui/                       # Base UI components (30+)
+│   ├── analysis/                 # Resume analysis views
+│   ├── research/                 # Company research views
+│   ├── cover-letter/             # Cover letter generation
+│   ├── linkedin/                 # LinkedIn optimization (9 components)
+│   ├── interviewers/             # Interviewer research (5 components)
+│   ├── chat/                     # Chat interface
+│   ├── mock-interview/           # Mock interview components
+│   ├── dashboard/                # Dashboard components (11 components)
+│   ├── settings/                 # Settings components (9 components)
+│   └── jobs/                     # Job management
 ├── lib/
-│   ├── db/                   # Drizzle schema & connection
-│   ├── ai/                   # Azure OpenAI client & agents
-│   ├── parsers/              # PDF, DOCX, TXT parsing
-│   └── scrapers/             # Web scraping utilities
-└── __tests__/                # Test files
+│   ├── db/                       # Drizzle schema & connection
+│   ├── ai/                       # Azure OpenAI client & 7 agents
+│   ├── parsers/                  # PDF, DOCX, TXT, LinkedIn parsing
+│   ├── scrapers/                 # Web scraping utilities
+│   ├── utils/                    # Shared utilities (SSE, clipboard, etc.)
+│   ├── auth/                     # Authentication middleware
+│   ├── activity/                 # Activity logging
+│   ├── contexts/                 # React contexts (settings)
+│   └── schemas/                  # Zod validation schemas
+└── __tests__/                    # Test files (16 files, 146 tests)
 ```
 
 ## Development
@@ -282,7 +407,7 @@ npm run db:studio    # Open Drizzle Studio
 
 ## CI/CD
 
-This repo uses GitHub Actions for CI, plus an optional (manual) Vercel deploy workflow.
+This repo uses GitHub Actions for CI, plus an optional Vercel deploy workflow.
 
 ### CI (GitHub Actions)
 
@@ -301,37 +426,96 @@ What it runs:
 Test tracking:
 - CI uploads a `test-results` artifact containing `test-results/vitest.xml` (JUnit) for each run.
 
-Build note:
-- `npm run build` uses `next build --webpack` for better reliability in locked-down CI environments.
-
 ### CD (Vercel, optional)
 
 Workflow: `.github/workflows/deploy-vercel.yml`
 
-- Triggered manually via `workflow_dispatch` (Actions tab → “Deploy (Vercel)”).
+- Triggered manually via `workflow_dispatch` (Actions tab → "Deploy (Vercel)").
 - Requires GitHub Actions secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
-- If secrets are not set (e.g., in forks), the workflow exits successfully after printing a “Skipping deploy” message.
+- If secrets are not set, the workflow exits successfully after printing a "Skipping deploy" message.
 
 ## API Endpoints
+
+### Job Management
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET/POST | `/api/jobs` | List/create job applications |
 | GET/PUT/DELETE | `/api/jobs/[jobId]` | Job CRUD operations |
 | POST | `/api/jobs/[jobId]/resume` | Upload resume |
-| POST | `/api/agents/resume-analyzer` | Run resume analysis (streaming) |
-| POST | `/api/agents/company-research` | Run company research (streaming) |
-| POST | `/api/agents/mock-interviewer` | Mock interview agent (streaming) |
-| POST | `/api/agents/cover-letter` | Generate cover letter (streaming) |
-| GET/POST | `/api/jobs/[jobId]/cover-letters` | List/create cover letters |
-| GET/PATCH/DELETE | `/api/jobs/[jobId]/cover-letters/[letterId]` | Cover letter operations |
-| GET/POST | `/api/mock-interview/sessions` | List/create interview sessions |
+| POST | `/api/jobs/[jobId]/job-description` | Update job description |
+
+### AI Agents (Streaming SSE)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/agents/resume-analyzer` | Run resume analysis |
+| POST | `/api/agents/company-research` | Run company research |
+| POST | `/api/agents/mock-interviewer` | Mock interview agent |
+| POST | `/api/agents/cover-letter` | Generate cover letter |
+| POST | `/api/agents/linkedin-optimizer` | Analyze LinkedIn profile |
+| POST | `/api/interviewers` | Analyze interviewer profile |
+
+### Cover Letters
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/agents/cover-letter` | List/generate cover letters |
+| GET/PATCH/DELETE | `/api/agents/cover-letter/[id]` | Cover letter operations |
+
+### LinkedIn Profiles
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/linkedin-profiles` | List/save LinkedIn profiles |
+| GET/PATCH/DELETE | `/api/linkedin-profiles/[profileId]` | Profile operations |
+| GET | `/api/agents/linkedin-optimizer` | Get LinkedIn analysis |
+
+### Interviewers
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/interviewers` | List/add interviewers |
+| GET/PATCH/DELETE | `/api/interviewers/[id]` | Interviewer operations |
+
+### Mock Interviews
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/api/mock-interview/sessions` | List/create sessions |
 | GET/PATCH/DELETE | `/api/mock-interview/sessions/[sessionId]` | Session operations |
 | GET | `/api/mock-interview/analytics` | Performance metrics |
+
+### Dashboard
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard/stats` | Dashboard statistics |
+| GET | `/api/dashboard/activity` | Activity timeline |
+| GET/POST | `/api/dashboard/skill-gaps` | Skill gap aggregation |
+| PATCH | `/api/dashboard/skill-gaps/[id]` | Mark skill as learned |
+| GET | `/api/dashboard/suggestions` | AI-powered suggestions |
+
+### Settings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/PUT | `/api/settings` | Get/update user settings |
+| POST | `/api/settings/export` | Export all data as JSON |
+| POST | `/api/settings/import` | Import data from JSON |
+| POST | `/api/settings/test-connection` | Test API connections |
+| GET/POST | `/api/settings/master-resume` | Master resume management |
+| GET | `/api/settings/master-resume/versions` | Resume version history |
+
+### Other
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | `/api/chat` | Chat with saved data (streaming) |
 | POST | `/api/scrape` | Scrape job description URL |
 | POST | `/api/parse` | Parse uploaded document |
 | POST | `/api/export` | Generate report (JSON/Markdown) |
+| GET | `/api/files/[...path]` | Secure file serving |
 
 ## Deployment
 
@@ -410,16 +594,10 @@ vercel --prod
 git push origin main
 ```
 
-#### Step 4: Initialize Database
-
-After the first deployment, the database will be created automatically when you first access the application.
-
 #### Vercel Limitations
 
-- **SQLite persistence**: Vercel's serverless functions have ephemeral filesystems. The SQLite database will reset on each deployment or cold start. For persistent data:
-  - Use Vercel's KV, Postgres, or Blob storage
-  - Or migrate to a cloud database (see Database Migration section)
-- **Function timeout**: Default 10s (Pro: 60s, Enterprise: 900s). AI operations may need longer timeouts.
+- **SQLite persistence**: Vercel's serverless functions have ephemeral filesystems. The SQLite database will reset on each deployment or cold start. For persistent data, use Turso or PostgreSQL.
+- **Function timeout**: Hobby: 10s, Pro: 60s. AI operations may need the Pro plan. We set `maxDuration=300` but it's limited by your plan.
 
 ---
 
@@ -523,17 +701,6 @@ docker-compose logs -f
 
 # Stop
 docker-compose down
-```
-
-#### Update next.config.ts for Standalone Output
-
-Add to `next.config.ts`:
-
-```typescript
-const nextConfig = {
-  output: 'standalone',
-  // ... other config
-};
 ```
 
 ---
@@ -663,7 +830,7 @@ sudo certbot --nginx -d your-domain.com
 
 ### Database Migration (For Scalable Deployments)
 
-If you need multi-instance deployments or serverless with persistent data, migrate from SQLite to a cloud database.
+If you need multi-instance deployments or serverless with persistent data, migrate from SQLite.
 
 #### Option A: Turso (SQLite-compatible)
 
@@ -680,8 +847,6 @@ turso db show job-resume-enhancer --url
 # Update .env
 DATABASE_URL=libsql://your-db.turso.io?authToken=your-token
 ```
-
-Update `lib/db/index.ts` to use `@libsql/client` instead of `better-sqlite3`.
 
 #### Option B: PostgreSQL (Neon, Supabase, or self-hosted)
 
@@ -703,7 +868,7 @@ Update `lib/db/index.ts` to use `@libsql/client` instead of `better-sqlite3`.
 | `DATABASE_URL` | Yes | SQLite path (e.g., file:./data/resume-enhancer.db) |
 | `AUTH_SECRET_TOKEN` | Yes* | Bearer token for API authentication (* required in production) |
 | `BRAVE_SEARCH_API_KEY` | No | Brave Search API key (falls back to DuckDuckGo) |
-| `LOG_LEVEL` | No | Logging level: debug, info, warn, error (default: warn in prod) |
+| `LOG_LEVEL` | No | Logging level: debug, info, warn, error (default: warn) |
 
 ---
 
@@ -717,17 +882,6 @@ curl -H "Authorization: Bearer your-auth-secret-token" \
 ```
 
 The frontend automatically includes the token from the `AUTH_SECRET_TOKEN` environment variable.
-
----
-
-### Health Checks
-
-The application exposes a health endpoint for monitoring:
-
-```bash
-curl https://your-domain.com/api/health
-# Returns: { "status": "ok", "timestamp": "..." }
-```
 
 ---
 
@@ -751,6 +905,7 @@ chmod 755 data
 **AI requests timeout:**
 - Increase server timeout settings (nginx: `proxy_read_timeout`, Vercel: function duration)
 - AI operations can take 30-60 seconds for complex analyses
+- All agent routes have `maxDuration=300` set
 
 **Memory issues:**
 - Minimum recommended: 1GB RAM
@@ -772,6 +927,16 @@ The UI uses Anthropic's brand colors:
 
 - **SPECIFICATION.md** - Complete technical specification with implementation details
 - **CLAUDE.md** - AI assistant guidance for working with this codebase
+- **AGENTS.md** - Documentation of all 7 AI agents
+
+## Version History
+
+| Version | Date | Highlights |
+|---------|------|------------|
+| v1.0 | Jan 3, 2026 | Core features: Resume analysis, company research, chat, export |
+| v1.1 | Jan 3, 2026 | Mock interview practice with AI feedback, voice support |
+| v1.2 | Jan 4, 2026 | Security hardening, all code review issues resolved |
+| v1.3 | Jan 5, 2026 | Cover letters, LinkedIn optimization, interviewer research, dashboard, settings |
 
 ## License
 
