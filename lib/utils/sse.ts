@@ -58,35 +58,49 @@ export async function consumeSSEStream<T>(
   const decoder = new TextDecoder()
   let buffer = ""
 
+  const processLine = (line: string) => {
+    if (line.startsWith("data: ")) {
+      const data = line.slice(6)
+
+      // Skip "[DONE]" marker
+      if (data === "[DONE]") return
+
+      try {
+        const event = JSON.parse(data) as SSEEvent<T>
+        options.onEvent(event)
+      } catch {
+        // Only call onError if provided, otherwise silently ignore parse errors
+        if (options.onError) {
+          options.onError(
+            new Error(`Failed to parse SSE event: ${data.slice(0, 100)}`)
+          )
+        }
+      }
+    }
+  }
+
   try {
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+
+      if (done) {
+        // Flush any remaining bytes from the decoder
+        buffer += decoder.decode()
+        break
+      }
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split("\n")
       buffer = lines.pop() || ""
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6)
-
-          // Skip "[DONE]" marker
-          if (data === "[DONE]") continue
-
-          try {
-            const event = JSON.parse(data) as SSEEvent<T>
-            options.onEvent(event)
-          } catch {
-            // Only call onError if provided, otherwise silently ignore parse errors
-            if (options.onError) {
-              options.onError(
-                new Error(`Failed to parse SSE event: ${data.slice(0, 100)}`)
-              )
-            }
-          }
-        }
+        processLine(line)
       }
+    }
+
+    // Process any remaining content in the buffer after stream ends
+    if (buffer.trim()) {
+      processLine(buffer)
     }
   } finally {
     reader.releaseLock()
@@ -122,6 +136,26 @@ export async function consumeSSEStreamWithAbort<T>(
   const decoder = new TextDecoder()
   let buffer = ""
 
+  const processLine = (line: string) => {
+    if (line.startsWith("data: ")) {
+      const data = line.slice(6)
+
+      // Skip "[DONE]" marker
+      if (data === "[DONE]") return
+
+      try {
+        const event = JSON.parse(data) as SSEEvent<T>
+        options.onEvent(event)
+      } catch {
+        if (options.onError) {
+          options.onError(
+            new Error(`Failed to parse SSE event: ${data.slice(0, 100)}`)
+          )
+        }
+      }
+    }
+  }
+
   try {
     while (true) {
       // Check for abort
@@ -130,31 +164,25 @@ export async function consumeSSEStreamWithAbort<T>(
       }
 
       const { done, value } = await reader.read()
-      if (done) break
+
+      if (done) {
+        // Flush any remaining bytes from the decoder
+        buffer += decoder.decode()
+        break
+      }
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split("\n")
       buffer = lines.pop() || ""
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6)
-
-          // Skip "[DONE]" marker
-          if (data === "[DONE]") continue
-
-          try {
-            const event = JSON.parse(data) as SSEEvent<T>
-            options.onEvent(event)
-          } catch {
-            if (options.onError) {
-              options.onError(
-                new Error(`Failed to parse SSE event: ${data.slice(0, 100)}`)
-              )
-            }
-          }
-        }
+        processLine(line)
       }
+    }
+
+    // Process any remaining content in the buffer after stream ends (unless aborted)
+    if (!signal?.aborted && buffer.trim()) {
+      processLine(buffer)
     }
   } finally {
     reader.releaseLock()

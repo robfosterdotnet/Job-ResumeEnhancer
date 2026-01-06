@@ -22,6 +22,8 @@ import { formatDistanceToNow } from "date-fns"
 import { ResumeUploader } from "@/components/jobs/resume-uploader"
 import { ExportButton } from "@/components/jobs/export-button"
 import { DeleteJobButton } from "@/components/jobs/delete-job-button"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 type PageProps = { params: Promise<{ jobId: string }> }
 
@@ -199,8 +201,10 @@ export default async function JobDetailPage({ params }: PageProps) {
             <CardTitle>Job Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
-              {job.jobDescriptionText}
+            <div className="prose prose-sm dark:prose-invert max-w-none max-h-[600px] overflow-y-auto">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {job.jobDescriptionText || ""}
+              </ReactMarkdown>
             </div>
           </CardContent>
         </Card>
