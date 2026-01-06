@@ -11,16 +11,10 @@ import {
   Building2,
   Calendar,
   ExternalLink,
-  FileSearch,
-  Building,
-  MessageSquare,
   ArrowLeft,
-  Play,
-  FileEdit,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { ResumeUploader } from "@/components/jobs/resume-uploader"
-import { ExportButton } from "@/components/jobs/export-button"
+import { ActionsCard } from "@/components/jobs/actions-card"
 import { DeleteJobButton } from "@/components/jobs/delete-job-button"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -118,54 +112,16 @@ export default async function JobDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Actions</CardTitle>
-            <CardDescription>Analyze your application and research the company</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-            <Link href={`/jobs/${job.id}/resume-analysis`}>
-              <Button disabled={!job.resume}>
-                <FileSearch className="mr-2 h-4 w-4" />
-                {hasAnalysis ? "View Analysis" : "Analyze Resume"}
-              </Button>
-            </Link>
-            <Link href={`/jobs/${job.id}/company-research`}>
-              <Button variant="outline" disabled={!job.company}>
-                <Building className="mr-2 h-4 w-4" />
-                Research Company
-              </Button>
-            </Link>
-            <Link href={`/jobs/${job.id}/chat`}>
-              <Button variant="outline">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Chat
-              </Button>
-            </Link>
-            <Link href={`/jobs/${job.id}/mock-interview`}>
-              <Button variant="outline" disabled={!hasAnalysis || (latestAnalysis?.interviewQuestions?.length || 0) === 0}>
-                <Play className="mr-2 h-4 w-4" />
-                Mock Interview
-              </Button>
-            </Link>
-            <Link href={`/jobs/${job.id}/cover-letter`}>
-              <Button variant="outline" disabled={!job.resume}>
-                <FileEdit className="mr-2 h-4 w-4" />
-                Cover Letter
-              </Button>
-            </Link>
-            <ExportButton jobId={job.id} jobTitle={job.title} />
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Resume Section */}
-          <ResumeUploader
-            jobId={job.id}
-            currentResume={job.resume || undefined}
-          />
-
+        {/* Quick Actions and Resume Upload */}
+        <ActionsCard
+          jobId={job.id}
+          jobTitle={job.title}
+          initialHasResume={!!job.resume}
+          initialHasAnalysis={hasAnalysis}
+          hasCompany={!!job.company}
+          interviewQuestionsCount={latestAnalysis?.interviewQuestions?.length || 0}
+          currentResume={job.resume || undefined}
+        >
           {/* Analysis Summary */}
           {latestAnalysis && (
             <Card>
@@ -193,7 +149,7 @@ export default async function JobDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
-        </div>
+        </ActionsCard>
 
         {/* Job Description */}
         <Card>

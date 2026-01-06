@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         })
       } catch (cleanError) {
         // If AI cleanup fails, fall back to raw content
-        logger.warn("AI cleanup failed, returning raw content", cleanError)
+        logger.warn("AI cleanup failed, returning raw content", { error: cleanError instanceof Error ? cleanError.message : String(cleanError) })
         return NextResponse.json({
           title: result.title,
           company: result.company,
