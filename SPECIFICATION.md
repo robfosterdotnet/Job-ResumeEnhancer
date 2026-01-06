@@ -1,8 +1,8 @@
-# Job Resume Enhancer - Application Specification
+# JobReady - Application Specification
 
 ## Overview
 
-A personal job search tool that helps you analyze your resume against job postings and deeply research companies before applying. Built with a modern, intuitive interface using Anthropic branding.
+JobReady is your AI-powered command center for landing your dream job. Analyze resumes against job postings, research companies in depth, optimize your LinkedIn profile, prepare for interviews with AI mock sessions, and generate tailored cover letters. Built with a modern, intuitive interface.
 
 ---
 

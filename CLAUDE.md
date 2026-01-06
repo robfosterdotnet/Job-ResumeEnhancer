@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Job Resume Enhancer is a personal job search tool that analyzes resumes against job postings and researches companies. It uses two AI agents powered by Azure OpenAI (gpt-5.2):
+JobReady is an AI-powered job search command center that analyzes resumes against job postings, researches companies, optimizes LinkedIn profiles, and prepares candidates for interviews. It uses two AI agents powered by Azure OpenAI (gpt-5.2):
 
 1. **Resume Analyzer** - Evaluates resumes, provides fit scores, enhancement suggestions, and generates interview questions
 2. **Company Researcher** - Deep dives into companies using Brave Search (with DuckDuckGo fallback) to find leadership, financials, news, legal issues, and ethics alignment

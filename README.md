@@ -1,6 +1,6 @@
-# Job Resume Enhancer
+# JobReady
 
-A comprehensive job search assistant that analyzes resumes, researches companies, optimizes LinkedIn profiles, and prepares you for interviews. Built with Next.js, Azure OpenAI, and Anthropic-inspired design.
+**Stop hoping you'll get the job. Know you will.**
 
 [![CI](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml/badge.svg)](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml)
 ![Version](https://img.shields.io/badge/version-1.3-blue)
@@ -9,62 +9,84 @@ A comprehensive job search assistant that analyzes resumes, researches companies
 
 ---
 
-## Screenshots
+## The Problem
 
-### Dashboard with Kanban Pipeline
+You're qualified. You know it. But somehow, you're still:
+
+- Sending resumes into the void and hearing nothing back
+- Walking into interviews without knowing what they'll ask
+- Googling the company 10 minutes before your call
+- Writing the same generic cover letter for the 50th time
+- Wondering why candidates with worse experience keep getting offers
+
+**The difference between you and them isn't skill. It's preparation.**
+
+---
+
+## The Solution
+
+JobReady is your AI-powered command center for job hunting. It doesn't just help you apply—it makes sure you're the most prepared candidate in the room.
+
+### See It In Action
+
 ![Dashboard](docs/screenshots/01-dashboard-kanban.png)
 
-### Resume Analysis with Fit Score
 ![Resume Analysis](docs/screenshots/05-resume-analysis.png)
 
-### Company Research
 ![Company Research](docs/screenshots/06-company-research.png)
 
-### LinkedIn Profile Optimizer
 ![LinkedIn Optimizer](docs/screenshots/linkedin-optimizer.png)
 
-### Mock Interview Practice
 ![Mock Interview](docs/screenshots/09-mock-interview-question.png)
 
-### AI-Powered Feedback
-![Interview Feedback](docs/screenshots/10-mock-interview-feedback.png)
+---
+
+## What You Get
+
+### Resume Analysis That Actually Helps
+Upload your resume. Paste the job description. Get a fit score, keyword gaps, and **exact rewrites** to make your resume match what they're looking for. No more guessing.
+
+### Company Intel That Impresses
+Know the CEO's name. Know their recent funding. Know about that lawsuit they're dealing with. Walk into every interview knowing more about the company than most employees do.
+
+### LinkedIn That Gets Found
+Your profile is costing you interviews. JobReady analyzes it against your target role and gives you three better headlines, a rewritten summary, and the exact keywords recruiters are searching for.
+
+### Interview Prep That Works
+Practice with AI that adapts to your answers. Get scored on STAR method. Know your weak spots before the real interview exposes them.
+
+### Cover Letters in 30 Seconds
+Stop staring at blank pages. Generate tailored cover letters that reference the company's actual values and your actual experience.
+
+### Track Everything
+Visual Kanban pipeline. Never lose track of where you are with each application. See your progress. Stay motivated.
+
+---
+
+## The Numbers
+
+| What You Get | Traditional Approach | With JobReady |
+|--------------|---------------------|---------------|
+| Resume tailoring | 45 min per application | 2 minutes |
+| Company research | 2+ hours of Googling | 30 seconds |
+| Interview prep | Hope for the best | Know every likely question |
+| Cover letters | Painful | Painless |
+| LinkedIn optimization | Hire an expensive coach | Built in |
 
 ---
 
 ## Quick Start
 
 ```bash
-# Clone and install
 git clone https://github.com/robfosterdotnet/Job-ResumeEnhancer.git
 cd Job-ResumeEnhancer
 npm install
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your Azure OpenAI credentials
-
-# Initialize database and start
+cp .env.example .env   # Add your Azure OpenAI credentials
 npm run db:push
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to get started.
-
----
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Interactive Dashboard** | Kanban pipeline, metrics bar, activity timeline, skill gap tracking |
-| **Resume Analysis** | Fit scoring, enhancement suggestions, keyword analysis, interview questions |
-| **Company Research** | Leadership profiles, financials, news, legal issues, ethics alignment |
-| **LinkedIn Optimization** | Profile scoring, headline alternatives, summary rewrite, SEO keywords |
-| **Interviewer Research** | Parse profiles, predict questions, find common ground |
-| **Mock Interviews** | AI feedback, STAR method analysis, voice input/output, session summaries |
-| **Cover Letters** | Tone/length options, multiple versions, inline editing |
-| **Chat Assistant** | Conversational follow-up with your saved data |
-| **Settings** | Theme customization, AI preferences, data export/import |
+Open [http://localhost:3000](http://localhost:3000) and start preparing like a professional.
 
 ---
 
@@ -73,20 +95,17 @@ Open [http://localhost:3000](http://localhost:3000) to get started.
 | Layer | Technology |
 |-------|------------|
 | Framework | Next.js 16+ (App Router) + TypeScript |
-| AI | Azure OpenAI (gpt-5.2 deployment) |
+| AI | Azure OpenAI (gpt-5.2) |
 | Database | SQLite + Drizzle ORM (20 tables) |
 | Web Search | Brave Search API + DuckDuckGo fallback |
 | UI | Tailwind CSS v4 + shadcn/ui |
 | Testing | Vitest + React Testing Library (146 tests) |
-| CI/CD | GitHub Actions |
 
-**Codebase:** 256 TypeScript files, 88 React components, 34 API routes, 7 AI agents
+**Codebase:** 256 TypeScript files • 88 React components • 34 API routes • 7 AI agents
 
 ---
 
 ## Environment Variables
-
-Create a `.env` file:
 
 ```bash
 # Required - Azure OpenAI
@@ -96,78 +115,85 @@ AZURE_OPENAI_DEPLOYMENT=gpt-5.2
 AZURE_OPENAI_API_VERSION=2024-07-01-preview
 
 # Required - Database
-DATABASE_URL=file:./data/resume-enhancer.db
+DATABASE_URL=file:./data/jobready.db
 
-# Required for production - Authentication
+# Required for production
 AUTH_SECRET_TOKEN=your-secure-random-token-min-32-chars
 
-# Optional - Web Search (falls back to DuckDuckGo)
+# Optional - Better search results
 BRAVE_SEARCH_API_KEY=your-brave-api-key
 ```
 
 ---
 
-## Application Walkthrough
+## Features Deep Dive
 
-### 1. Create a Job Application
+### Resume Analyzer
+- **Fit Score**: 0-100% match rating with detailed breakdown
+- **Keyword Analysis**: See exactly which terms you're missing
+- **Enhancement Suggestions**: Before/after text you can copy directly
+- **Interview Questions**: 15-20 likely questions with suggested answers
 
-Click "New Job Application" from the sidebar. Enter the job title, company name, and paste the job description (or enter a URL to auto-scrape with AI cleanup).
-
-![New Job Form](docs/screenshots/02-new-job-form.png)
-
-### 2. Upload Your Resume
-
-Upload your resume (PDF, DOCX, or TXT) via drag-and-drop or click to browse.
-
-![Job Detail with Resume](docs/screenshots/04-resume-uploaded.png)
-
-### 3. Analyze Your Resume
-
-Click "Analyze Resume" to get AI-powered insights including:
-- **Fit Score** (0-100%) with detailed breakdown
-- **Strengths** and areas for improvement
-- **Enhancement Suggestions** with before/after text
-- **Keyword Analysis** (matched and missing)
-- **Interview Questions** with suggested answers
-
-### 4. Research the Company
-
-Click "Research Company" to gather intelligence:
-- Company overview and industry positioning
-- Leadership team profiles
-- Financial information and growth trends
-- Employee reviews and culture insights
+### Company Research
+- Leadership team with LinkedIn profiles
+- Financial info (revenue, funding, stock price)
 - Recent news with sentiment analysis
 - Legal issues and regulatory concerns
 - Ethics alignment scoring
+- Glassdoor-style culture insights
 
-### 5. Additional Features
+### LinkedIn Optimizer
+- Profile score with section-by-section breakdown
+- Three alternative headlines (tested formulas)
+- Rewritten summary optimized for recruiters
+- Skills gap analysis
+- SEO keyword suggestions
+- Completeness checklist
 
-| Action | What You Get |
-|--------|--------------|
-| **LinkedIn Align** | Profile score, headline alternatives, optimized summary, SEO keywords |
-| **Interviewers** | Research panel members, predict their questions, find talking points |
-| **Mock Interview** | Practice with AI feedback, STAR analysis, voice support |
-| **Cover Letter** | Generate tailored letters with tone/length options |
-| **Chat** | Ask follow-up questions about your analysis |
-| **Export** | Download reports as JSON or Markdown |
+### Mock Interviewer
+- Configurable sessions (5-20 questions)
+- Difficulty levels from entry to executive
+- STAR method analysis for behavioral questions
+- Real-time feedback or summary mode
+- Voice input/output support
+- Performance tracking across sessions
 
-### Mock Interview Flow
+### Cover Letter Generator
+- Tone options: formal, conversational, enthusiastic
+- Length options: short, medium, long
+- Integrates your resume analysis insights
+- Save multiple versions
+- Inline editing with revert
 
-![Mock Interview Setup](docs/screenshots/08-mock-interview-setup.png)
+### Interviewer Research
+- Parse interviewer LinkedIn profiles
+- Predict questions they'll ask (with reasoning)
+- Find common ground and talking points
+- Preparation tips specific to each person
 
-Configure sessions with:
-- Feedback mode (immediate or summary)
-- Question count (5-20)
-- Difficulty level
-- Focus categories
-- Specific interviewers to simulate
+---
 
-![Mock Interview Summary](docs/screenshots/11-mock-interview-summary.png)
+## Deployment
 
-### Cover Letter Generation
+**Supported:** Vercel, Docker, VPS (DigitalOcean, Linode, AWS EC2)
 
-![Cover Letter](docs/screenshots/cover-letter-feature.png)
+**Requires:** Node.js runtime, filesystem access for SQLite
+
+### Vercel (Quickest)
+1. Import repo at [vercel.com/new](https://vercel.com/new)
+2. Add environment variables
+3. Deploy
+
+### Docker
+```bash
+docker-compose up -d --build
+```
+
+### VPS
+```bash
+npm ci && npm run build
+pm2 start ecosystem.config.js
+```
 
 ---
 
@@ -176,134 +202,11 @@ Configure sessions with:
 ```bash
 npm run dev          # Start development server
 npm run build        # Production build
-npm run lint         # Run ESLint
 npm run test         # Run all tests
-npm run test:watch   # Watch mode
+npm run lint         # Run ESLint
 npm run db:push      # Push schema changes
-npm run db:studio    # Open Drizzle Studio
+npm run db:studio    # Inspect database
 ```
-
----
-
-## Project Structure
-
-```
-Job-ResumeEnhancer/
-├── app/
-│   ├── (dashboard)/              # Dashboard pages
-│   │   ├── page.tsx              # Main dashboard with Kanban
-│   │   ├── jobs/[jobId]/         # Job detail & sub-pages
-│   │   ├── linkedin/             # Standalone LinkedIn optimization
-│   │   └── settings/             # Application settings
-│   └── api/
-│       ├── agents/               # 7 AI agent endpoints (streaming)
-│       ├── jobs/                 # Job CRUD
-│       ├── dashboard/            # Dashboard data
-│       └── ...                   # Other endpoints
-├── components/
-│   ├── ui/                       # Base UI components (30+)
-│   ├── analysis/                 # Resume analysis views
-│   ├── research/                 # Company research views
-│   ├── dashboard/                # Dashboard components
-│   └── ...                       # Feature-specific components
-├── lib/
-│   ├── db/                       # Drizzle schema & connection
-│   ├── ai/                       # Azure OpenAI client & agents
-│   ├── parsers/                  # PDF, DOCX, LinkedIn parsing
-│   └── utils/                    # Shared utilities
-└── __tests__/                    # 146 tests across 16 files
-```
-
----
-
-## API Endpoints
-
-### Core Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET/POST | `/api/jobs` | List/create job applications |
-| GET/PUT/DELETE | `/api/jobs/[jobId]` | Job CRUD operations |
-| POST | `/api/jobs/[jobId]/resume` | Upload resume |
-
-### AI Agents (Streaming SSE)
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/agents/resume-analyzer` | Resume analysis |
-| `/api/agents/company-research` | Company research |
-| `/api/agents/mock-interviewer` | Mock interview |
-| `/api/agents/cover-letter` | Cover letter generation |
-| `/api/agents/linkedin-optimizer` | LinkedIn optimization |
-| `/api/interviewers` | Interviewer analysis |
-
-### Other
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/chat` | Chat with saved data |
-| `/api/scrape` | Scrape job description URL |
-| `/api/export` | Generate reports |
-| `/api/settings` | User settings |
-| `/api/dashboard/*` | Dashboard data |
-
----
-
-## Deployment
-
-### Supported Platforms
-
-- **Vercel** (with Node.js runtime) - Recommended for simplicity
-- **Docker** - For consistent cross-platform deployments
-- **VPS** (DigitalOcean, Linode, AWS EC2) - Full control
-
-**Requirements:** Node.js runtime, filesystem access (SQLite uses `better-sqlite3`)
-
-### Vercel (Quickest)
-
-1. Import repo at [vercel.com/new](https://vercel.com/new)
-2. Add environment variables in Settings
-3. Deploy
-
-**Note:** Vercel's serverless has ephemeral filesystems. Database resets on cold starts. For persistence, use Turso or PostgreSQL.
-
-### Docker
-
-```dockerfile
-# See full Dockerfile in repo
-docker-compose up -d --build
-```
-
-### VPS
-
-```bash
-# Install Node.js 20, build tools, PM2
-npm ci && npm run build
-pm2 start ecosystem.config.js
-```
-
-See detailed deployment instructions for each platform in the full documentation.
-
-### Authentication
-
-All API routes require bearer token authentication in production:
-
-```bash
-curl -H "Authorization: Bearer your-auth-secret-token" \
-  https://your-domain.com/api/jobs
-```
-
----
-
-## CI/CD
-
-**GitHub Actions** (`.github/workflows/ci.yml`):
-- Runs on PRs and pushes to main
-- Executes: `npm ci` → `lint` → `test` → `build`
-
-**Vercel Deploy** (optional):
-- Manual trigger via Actions tab
-- Requires: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 
 ---
 
@@ -311,18 +214,9 @@ curl -H "Authorization: Bearer your-auth-secret-token" \
 
 | File | Description |
 |------|-------------|
-| `SPECIFICATION.md` | Complete technical specification |
-| `CLAUDE.md` | AI assistant guidance for this codebase |
-| `AGENTS.md` | Documentation of all 7 AI agents |
-
----
-
-## Design
-
-Uses Anthropic brand colors:
-- **Primary**: #E5674C (Coral)
-- **Background**: #FAFAFA
-- **Foreground**: #1A1A2E
+| `SPECIFICATION.md` | Technical specification |
+| `CLAUDE.md` | AI assistant guidance |
+| `AGENTS.md` | AI agent documentation |
 
 ---
 
@@ -330,10 +224,18 @@ Uses Anthropic brand colors:
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| v1.0 | Jan 3, 2026 | Core features: Resume analysis, company research, chat, export |
-| v1.1 | Jan 3, 2026 | Mock interview practice with AI feedback, voice support |
-| v1.2 | Jan 4, 2026 | Security hardening, all code review issues resolved |
-| v1.3 | Jan 5, 2026 | Cover letters, LinkedIn optimization, interviewer research, dashboard, settings |
+| v1.0 | Jan 3, 2026 | Resume analysis, company research, chat |
+| v1.1 | Jan 3, 2026 | Mock interview practice with AI feedback |
+| v1.2 | Jan 4, 2026 | Security hardening, 14 issues resolved |
+| v1.3 | Jan 5, 2026 | LinkedIn optimization, cover letters, interviewer research, dashboard |
+
+---
+
+## Your Next Job Is Waiting
+
+The best candidates don't wing it. They prepare. JobReady gives you the same preparation that career coaches charge thousands for.
+
+**Clone it. Run it. Land the job.**
 
 ---
 

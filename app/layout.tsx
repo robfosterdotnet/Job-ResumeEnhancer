@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "@/components/settings/providers";
 
 export const metadata: Metadata = {
-  title: "Job Resume Enhancer",
-  description: "Analyze your resume against job postings and research companies to land your dream job",
+  title: "JobReady",
+  description: "Your AI-powered command center for landing your dream job. Resume analysis, company research, interview prep, and more.",
 };
 
 // Inline script to prevent theme flash

@@ -27,7 +27,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 px-6 border-b">
         <FileText className="h-8 w-8 text-primary" />
-        <span className="text-lg font-semibold">Resume Enhancer</span>
+        <span className="text-lg font-semibold">JobReady</span>
       </div>
 
       {/* Navigation */}
