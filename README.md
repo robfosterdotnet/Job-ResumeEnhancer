@@ -2,7 +2,7 @@
 
 **Stop hoping you'll get the job. Know you will.**
 
-[![CI](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml/badge.svg)](https://github.com/robfosterdotnet/Job-ResumeEnhancer/actions/workflows/ci.yml)
+[![CI](https://github.com/robfosterdotnet/JobReady/actions/workflows/ci.yml/badge.svg)](https://github.com/robfosterdotnet/JobReady/actions/workflows/ci.yml)
 ![Version](https://img.shields.io/badge/version-1.3-blue)
 ![Tests](https://img.shields.io/badge/tests-146%20passing-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)
@@ -78,8 +78,8 @@ Visual Kanban pipeline. Never lose track of where you are with each application.
 ## Quick Start
 
 ```bash
-git clone https://github.com/robfosterdotnet/Job-ResumeEnhancer.git
-cd Job-ResumeEnhancer
+git clone https://github.com/robfosterdotnet/JobReady.git
+cd JobReady
 npm install
 cp .env.example .env   # Add your Azure OpenAI credentials
 npm run db:push
