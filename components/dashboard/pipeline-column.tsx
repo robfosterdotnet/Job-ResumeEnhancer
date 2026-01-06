@@ -48,9 +48,8 @@ export function PipelineColumn({ id, title, jobs, color, onJobDeleted }: Pipelin
     <div
       ref={setNodeRef}
       className={cn(
-        "flex-shrink-0 w-72 md:w-64 lg:w-72",
         "bg-muted/50 rounded-lg p-3",
-        "flex flex-col max-h-[500px]",
+        "flex flex-col min-h-[200px] max-h-[350px]",
         isOver && "ring-2 ring-primary ring-offset-2"
       )}
     >

@@ -205,9 +205,9 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
     </div>
   )
 
-  // Desktop: Horizontal Kanban
+  // Desktop: Two-row Kanban grid (3 columns per row)
   const DesktopView = () => (
-    <div className="hidden md:block overflow-x-auto pb-4">
+    <div className="hidden md:block">
       <DndContext
         id={`${dndId}-desktop`}
         sensors={sensors}
@@ -215,7 +215,7 @@ export function JobPipeline({ initialJobs }: JobPipelineProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 min-w-max">
+        <div className="grid grid-cols-3 gap-4">
           {PIPELINE_STATUSES.map((status) => (
             <PipelineColumn
               key={status.id}
